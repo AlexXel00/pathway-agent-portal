@@ -25,14 +25,14 @@ export default function Login() {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         setInfo(
-          'Konto erstellt. Falls eine Bestaetigungs-Mail noetig ist, schau in deinem Postfach nach, ansonsten bist du jetzt eingeloggt.'
+          'Account created. Check your inbox if a confirmation email is required, otherwise you are now signed in.'
         )
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Etwas ist schiefgelaufen.'
-      if (message.toLowerCase().includes('nicht als agent registriert')) {
+      const message = err instanceof Error ? err.message : 'Something went wrong.'
+      if (message.toLowerCase().includes('not registered as an agent')) {
         setError(
-          'Diese Email ist nicht als Agent registriert. Bitte wende dich an einen Admin, damit er dich zuerst im System anlegt.'
+          'This email is not registered as an agent yet. Please ask an admin to add you first under Manage Agents.'
         )
       } else {
         setError(message)
@@ -67,7 +67,7 @@ export default function Login() {
         />
         <h1 style={{ fontSize: '1.6rem' }}>Pathway Agent Portal</h1>
         <p style={{ color: 'var(--color-secondary)', marginBottom: 28 }}>
-          {mode === 'signin' ? 'Melde dich mit deinem Agent-Konto an.' : 'Konto fuer dein Agent-Profil anlegen.'}
+          {mode === 'signin' ? 'Sign in with your agent account.' : 'Create an account for your agent profile.'}
         </p>
 
         <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
@@ -83,7 +83,7 @@ export default function Login() {
             />
           </div>
           <div className="field">
-            <label htmlFor="password">Passwort</label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -103,7 +103,7 @@ export default function Login() {
           )}
 
           <button type="submit" className="btn btn-primary" disabled={busy} style={{ width: '100%' }}>
-            {busy ? 'Bitte warten...' : mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
+            {busy ? 'Please wait...' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
 
@@ -118,8 +118,8 @@ export default function Login() {
           }}
         >
           {mode === 'signin'
-            ? 'Noch kein Konto? Erstelle eins mit deiner Agent-Email'
-            : 'Bereits ein Konto? Zur Anmeldung'}
+            ? "Don't have an account yet? Create one with your agent email"
+            : 'Already have an account? Sign in'}
         </button>
       </div>
     </div>
