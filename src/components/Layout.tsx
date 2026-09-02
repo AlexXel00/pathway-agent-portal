@@ -54,6 +54,9 @@ export default function Layout() {
           </div>
 
           <nav style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+            <NavLink to="/overview" style={navLinkStyle}>
+              Overview
+            </NavLink>
             <NavLink to="/listings" style={navLinkStyle}>
               Listings
             </NavLink>

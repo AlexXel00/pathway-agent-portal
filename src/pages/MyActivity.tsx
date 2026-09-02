@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { AgentActivity, AgentStats, Property } from '../lib/types'
 import { formatPhp } from '../lib/format'
+import AgentCard from '../components/AgentCard'
 
 export default function MyActivity() {
   const { agent } = useAuth()
@@ -40,6 +41,8 @@ export default function MyActivity() {
     <div>
       <h1>My Activity</h1>
       <p style={{ color: 'var(--color-secondary)', marginBottom: 24 }}>Overview of your performance at Pathway.</p>
+
+      {agent && <AgentCard agent={agent} />}
 
       <div
         style={{
