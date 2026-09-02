@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, MEDIA_BUCKET } from '../lib/supabase'
 import type { PropertyType, StructureType } from '../lib/types'
+import { COMMON_TAGS } from '../lib/constants'
 
 const TYPES: PropertyType[] = ['Commercial', 'Residential', 'Apartment/Condo', 'Agricultural', 'A&D', 'Other']
 const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Other']
@@ -32,6 +33,8 @@ export default function AdminNewListing() {
   const [structureSize, setStructureSize] = useState('')
   const [lotSize, setLotSize] = useState('')
   const [sellingPoint, setSellingPoint] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [customTag, setCustomTag] = useState('')
   const [description, setDescription] = useState('')
   const [priceTotal, setPriceTotal] = useState('')
   const [approxCommission, setApproxCommission] = useState('')
@@ -44,6 +47,18 @@ export default function AdminNewListing() {
   const [videoUrls, setVideoUrls] = useState('')
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+
+  function toggleTag(tag: string) {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
+
+  function addCustomTag() {
+    const value = customTag.trim()
+    if (value && !tags.includes(value)) {
+      setTags((prev) => [...prev, value])
+    }
+    setCustomTag('')
+  }
 
   // Default commission suggestion: 5% of price, matching Pathway's standard rule
   function onPriceBlur() {
@@ -99,6 +114,7 @@ export default function AdminNewListing() {
         structure_size_sqm: hasStructure && structureSize ? Number(structureSize) : null,
         lot_size_sqm: lotSize ? Number(lotSize) : null,
         special_selling_point: sellingPoint || null,
+        tags,
         description: description || null,
         price_total_php: priceTotal ? Number(priceTotal) : null,
         approx_commission_php: approxCommission ? Number(approxCommission) : null,
@@ -212,6 +228,61 @@ export default function AdminNewListing() {
         <div className="field">
           <label htmlFor="sellingPoint">Special selling point</label>
           <input id="sellingPoint" type="text" value={sellingPoint} onChange={(e) => setSellingPoint(e.target.value)} />
+        </div>
+
+        <div className="field">
+          <label>Highlights (used for filtering)</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {COMMON_TAGS.map((tag) => {
+              const active = tags.includes(tag)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className="badge"
+                  style={{
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: active ? 'var(--color-primary)' : 'var(--color-beige)',
+                    color: active ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                  }}
+                >
+                  {tag}
+                </button>
+              )
+            })}
+            {tags
+              .filter((t) => !COMMON_TAGS.includes(t))
+              .map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className="badge"
+                  style={{ cursor: 'pointer', border: 'none', background: 'var(--color-primary)', color: 'var(--color-ivory)' }}
+                >
+                  {tag} x
+                </button>
+              ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Add a custom highlight..."
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addCustomTag()
+                }
+              }}
+            />
+            <button type="button" className="btn btn-outline" onClick={addCustomTag}>
+              Add
+            </button>
+          </div>
         </div>
 
         <div className="field">

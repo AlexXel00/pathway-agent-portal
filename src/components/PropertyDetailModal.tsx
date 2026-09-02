@@ -168,6 +168,16 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
             </p>
           )}
 
+          {property.tags?.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '4px 0 14px' }}>
+              {property.tags.map((tag) => (
+                <span key={tag} className="badge badge-neutral">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {property.special_selling_point && (
             <p style={{ fontSize: '0.9rem' }}>
               <strong>Highlights:</strong> {property.special_selling_point}

@@ -47,6 +47,7 @@ export interface Property {
   structure_size_sqm: number | null
   lot_size_sqm: number | null
   special_selling_point: string | null
+  tags: string[]
   description: string | null
   price_total_php: number | null
   price_per_sqm_php: number | null
