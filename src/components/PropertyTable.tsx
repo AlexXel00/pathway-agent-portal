@@ -1,12 +1,14 @@
-import type { Property } from '../lib/types'
+import type { Agent, Property } from '../lib/types'
 import { formatPhp, formatNumber } from '../lib/format'
 
 interface Props {
   properties: Property[]
+  agentsById: Record<string, Agent>
+  isAdmin: boolean
   onSelect: (property: Property) => void
 }
 
-export default function PropertyTable({ properties, onSelect }: Props) {
+export default function PropertyTable({ properties, agentsById, isAdmin, onSelect }: Props) {
   const sorted = [...properties].sort((a, b) =>
     (a.internal_code ?? '').localeCompare(b.internal_code ?? '', undefined, { numeric: true, sensitivity: 'base' })
   )
@@ -22,6 +24,8 @@ export default function PropertyTable({ properties, onSelect }: Props) {
             <Th>Type</Th>
             <Th>Lot size</Th>
             <Th>Price</Th>
+            <Th>Listing agent</Th>
+            {isAdmin && <Th>Owner</Th>}
             <Th>Status</Th>
           </tr>
         </thead>
@@ -42,6 +46,8 @@ export default function PropertyTable({ properties, onSelect }: Props) {
               <Td>{p.type ?? '-'}</Td>
               <Td>{p.lot_size_sqm ? `${formatNumber(p.lot_size_sqm)} sqm` : '-'}</Td>
               <Td>{formatPhp(p.price_total_php)}</Td>
+              <Td>{p.listing_agent_id ? agentsById[p.listing_agent_id]?.name ?? '-' : '-'}</Td>
+              {isAdmin && <Td>{p.owner_contact_name || '-'}</Td>}
               <Td>
                 <span
                   className={`badge ${p.listing_status === 'Active' ? 'badge-active' : p.listing_status === 'Sold' ? 'badge-sold' : 'badge-neutral'}`}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import type { Agent, ListingStatus, Property } from '../lib/types'
 import PropertyCard from '../components/PropertyCard'
 import PropertyDetailModal from '../components/PropertyDetailModal'
@@ -13,6 +14,7 @@ const TABS: { label: string; value: ListingStatus | 'All' }[] = [
 ]
 
 export default function Listings() {
+  const { agent } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,8 +28,10 @@ export default function Listings() {
   useEffect(() => {
     async function load() {
       setLoading(true)
+      // properties_for_agents masks the owner contact for non-admins at the database level -
+      // it always returns owner_contact_name as null unless the querying user is an admin.
       const [{ data: props }, { data: ags }] = await Promise.all([
-        supabase.from('properties').select('*').order('created_at', { ascending: false }),
+        supabase.from('properties_for_agents').select('*').order('created_at', { ascending: false }),
         supabase.from('agents').select('*'),
       ])
       setProperties(props ?? [])
@@ -152,7 +156,7 @@ export default function Listings() {
       ) : filtered.length === 0 ? (
         <p style={{ color: 'var(--color-secondary)' }}>No listings match here.</p>
       ) : view === 'table' ? (
-        <PropertyTable properties={filtered} onSelect={setSelected} />
+        <PropertyTable properties={filtered} agentsById={agentsById} isAdmin={!!agent?.is_admin} onSelect={setSelected} />
       ) : (
         <div
           style={{

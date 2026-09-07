@@ -10,6 +10,8 @@ export type StructureType = 'Condo' | 'Apartment' | 'House' | 'Hotel' | 'Resort'
 
 export type ListingStatus = 'Active' | 'Sold' | 'On Hold' | 'Withdrawn'
 
+export type Broker = 'Jason' | 'Catherine' | 'Other'
+
 export interface Agent {
   id: string
   user_id: string | null
@@ -53,14 +55,17 @@ export interface Property {
   price_per_sqm_php: number | null
   approx_commission_php: number | null
   listing_agent_id: string | null
+  // Only populated for admins - non-admin reads (via the properties_for_agents view) always get null here.
   owner_contact_name: string | null
   is_direct_owner: boolean
-  has_other_broker: boolean
-  other_broker_name: string | null
-  other_broker_contact: string | null
+  broker: Broker | null
+  broker_other_name: string | null
+  broker_contact: string | null
   photos: string[]
   videos: string[]
   map_url: string | null
+  raw_media_url: string | null
+  edited_media_url: string | null
   listing_status: ListingStatus
   closing_agent_id: string | null
   actual_commission_php: number | null

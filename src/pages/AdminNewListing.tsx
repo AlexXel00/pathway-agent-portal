@@ -1,11 +1,12 @@
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, MEDIA_BUCKET } from '../lib/supabase'
-import type { PropertyType, StructureType } from '../lib/types'
+import type { Agent, Broker, PropertyType, StructureType } from '../lib/types'
 import { COMMON_TAGS } from '../lib/constants'
 
 const TYPES: PropertyType[] = ['Commercial', 'Residential', 'Apartment/Condo', 'Agricultural', 'A&D', 'Other']
 const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Other']
+const BROKERS: Broker[] = ['Jason', 'Catherine', 'Other']
 
 function slugify(input: string) {
   return input
@@ -38,15 +39,27 @@ export default function AdminNewListing() {
   const [description, setDescription] = useState('')
   const [priceTotal, setPriceTotal] = useState('')
   const [approxCommission, setApproxCommission] = useState('')
+  const [listingAgentId, setListingAgentId] = useState('')
   const [ownerContact, setOwnerContact] = useState('')
   const [isDirectOwner, setIsDirectOwner] = useState(true)
-  const [hasOtherBroker, setHasOtherBroker] = useState(false)
-  const [otherBrokerName, setOtherBrokerName] = useState('')
-  const [otherBrokerContact, setOtherBrokerContact] = useState('')
+  const [broker, setBroker] = useState<Broker | ''>('')
+  const [brokerOtherName, setBrokerOtherName] = useState('')
+  const [brokerContact, setBrokerContact] = useState('')
   const [mapUrl, setMapUrl] = useState('')
   const [videoUrls, setVideoUrls] = useState('')
+  const [rawMediaUrl, setRawMediaUrl] = useState('')
+  const [editedMediaUrl, setEditedMediaUrl] = useState('')
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('agents')
+      .select('*')
+      .order('name')
+      .then(({ data }) => setAgents(data ?? []))
+  }, [])
 
   function toggleTag(tag: string) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
@@ -118,17 +131,20 @@ export default function AdminNewListing() {
         description: description || null,
         price_total_php: priceTotal ? Number(priceTotal) : null,
         approx_commission_php: approxCommission ? Number(approxCommission) : null,
+        listing_agent_id: listingAgentId || null,
         owner_contact_name: ownerContact || null,
         is_direct_owner: isDirectOwner,
-        has_other_broker: hasOtherBroker,
-        other_broker_name: hasOtherBroker ? otherBrokerName || null : null,
-        other_broker_contact: hasOtherBroker ? otherBrokerContact || null : null,
+        broker: broker || null,
+        broker_other_name: broker === 'Other' ? brokerOtherName || null : null,
+        broker_contact: broker ? brokerContact || null : null,
         photos: photoUrls,
         videos: videoUrls
           .split(/\n|,/)
           .map((v) => v.trim())
           .filter(Boolean),
         map_url: mapUrl || null,
+        raw_media_url: rawMediaUrl || null,
+        edited_media_url: editedMediaUrl || null,
         listing_status: 'Active',
       })
       .select()
@@ -304,30 +320,56 @@ export default function AdminNewListing() {
           Commission auto-fills at 5% of the price when you leave the price field - adjust if needed.
         </p>
 
-        <div className="field">
-          <label htmlFor="owner">Listing agent / owner contact name</label>
-          <input id="owner" type="text" value={ownerContact} onChange={(e) => setOwnerContact(e.target.value)} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="field">
+            <label htmlFor="listingAgent">Listing agent</label>
+            <select id="listingAgent" value={listingAgentId} onChange={(e) => setListingAgentId(e.target.value)}>
+              <option value="">- None -</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="owner">Owner contact name</label>
+            <input id="owner" type="text" value={ownerContact} onChange={(e) => setOwnerContact(e.target.value)} />
+          </div>
         </div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--color-secondary)', marginTop: -10, marginBottom: 16 }}>
+          Listing agent is visible to every agent. Owner contact name is only ever shown to admins - fill in
+          whichever of the two you have, or both.
+        </p>
 
-        <label className="checkbox-row" style={{ marginBottom: 12 }}>
+        <label className="checkbox-row" style={{ marginBottom: 16 }}>
           <input type="checkbox" checked={isDirectOwner} onChange={(e) => setIsDirectOwner(e.target.checked)} />
           Direct owner (not via another broker)
         </label>
 
-        <label className="checkbox-row" style={{ marginBottom: 12 }}>
-          <input type="checkbox" checked={hasOtherBroker} onChange={(e) => setHasOtherBroker(e.target.checked)} />
-          There is another broker involved
-        </label>
+        <div className="field">
+          <label htmlFor="broker">Broker</label>
+          <select id="broker" value={broker} onChange={(e) => setBroker(e.target.value as Broker | '')}>
+            <option value="">- None -</option>
+            {BROKERS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {hasOtherBroker && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {broker && (
+          <div style={{ display: 'grid', gridTemplateColumns: broker === 'Other' ? '1fr 1fr' : '1fr', gap: 16 }}>
+            {broker === 'Other' && (
+              <div className="field">
+                <label htmlFor="brokerOtherName">Broker name</label>
+                <input id="brokerOtherName" type="text" value={brokerOtherName} onChange={(e) => setBrokerOtherName(e.target.value)} />
+              </div>
+            )}
             <div className="field">
-              <label htmlFor="brokerName">Other broker name</label>
-              <input id="brokerName" type="text" value={otherBrokerName} onChange={(e) => setOtherBrokerName(e.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="brokerContact">Other broker contact</label>
-              <input id="brokerContact" type="text" value={otherBrokerContact} onChange={(e) => setOtherBrokerContact(e.target.value)} />
+              <label htmlFor="brokerContact">Broker contact</label>
+              <input id="brokerContact" type="text" value={brokerContact} onChange={(e) => setBrokerContact(e.target.value)} />
             </div>
           </div>
         )}
@@ -340,6 +382,29 @@ export default function AdminNewListing() {
         <div className="field">
           <label htmlFor="videos">Video links (one per line)</label>
           <textarea id="videos" rows={2} value={videoUrls} onChange={(e) => setVideoUrls(e.target.value)} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="field">
+            <label htmlFor="rawMedia">Raw media link</label>
+            <input
+              id="rawMedia"
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={rawMediaUrl}
+              onChange={(e) => setRawMediaUrl(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="editedMedia">Edited / prepared media link</label>
+            <input
+              id="editedMedia"
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={editedMediaUrl}
+              onChange={(e) => setEditedMediaUrl(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="field">

@@ -189,13 +189,20 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
           )}
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.88rem', margin: '14px 0' }}>
-            <span>
-              <strong>Listing agent:</strong> {listingAgent?.name ?? property.owner_contact_name ?? '-'}
-            </span>
-            {property.has_other_broker && (
+            {listingAgent && (
               <span>
-                <strong>Other broker:</strong> {property.other_broker_name}
-                {property.other_broker_contact ? ` (${property.other_broker_contact})` : ''}
+                <strong>Listing agent:</strong> {listingAgent.name}
+              </span>
+            )}
+            {agent?.is_admin && property.owner_contact_name && (
+              <span>
+                <strong>Owner:</strong> {property.owner_contact_name}
+              </span>
+            )}
+            {property.broker && (
+              <span>
+                <strong>Broker:</strong> {property.broker === 'Other' ? property.broker_other_name || 'Other' : property.broker}
+                {property.broker_contact ? ` (${property.broker_contact})` : ''}
               </span>
             )}
             {property.listing_status === 'Sold' && closingAgent && (
@@ -203,6 +210,9 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 <strong>Closed by:</strong> {closingAgent.name}
               </span>
             )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.88rem', margin: '14px 0' }}>
             {property.map_url && (
               <a href={property.map_url} target="_blank" rel="noreferrer">
                 View on map
@@ -213,6 +223,16 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 Video {i + 1}
               </a>
             ))}
+            {property.raw_media_url && (
+              <a href={property.raw_media_url} target="_blank" rel="noreferrer">
+                Raw media
+              </a>
+            )}
+            {property.edited_media_url && (
+              <a href={property.edited_media_url} target="_blank" rel="noreferrer">
+                Edited / prepared media
+              </a>
+            )}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />
