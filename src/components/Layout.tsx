@@ -42,7 +42,7 @@ export default function Layout() {
             <img
               src={LOGO_URL}
               alt="Pathway"
-              style={{ width: 34, height: 34, objectFit: 'contain' }}
+              style={{ width: 60, height: 60, objectFit: 'contain' }}
               onError={(e) => {
                 ;(e.target as HTMLImageElement).style.display = 'none'
               }}

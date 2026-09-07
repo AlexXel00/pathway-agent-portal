@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Agent } from '../lib/types'
+import { getAgentInitials } from '../lib/format'
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<Agent[]>([])
@@ -80,7 +81,9 @@ export default function AdminAgents() {
           {agents.map((a) => (
             <div key={a.id} className="card" style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <strong>{a.name}</strong>
+                <strong>
+                  {a.name} ({getAgentInitials(a.name)})
+                </strong>
                 {a.is_head_admin && <span className="badge badge-active" style={{ marginLeft: 8 }}>Head Admin</span>}
                 <div style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>
                   {a.email ?? 'no email yet'} {a.phone ? `- ${a.phone}` : ''}

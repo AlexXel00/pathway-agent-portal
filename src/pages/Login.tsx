@@ -78,7 +78,7 @@ export default function Login() {
         <img
           src={LOGO_URL}
           alt="Pathway Real Estate"
-          style={{ width: 84, height: 84, objectFit: 'contain', margin: '0 auto 18px' }}
+          style={{ width: 150, height: 150, objectFit: 'contain', margin: '0 auto 18px' }}
           onError={(e) => {
             ;(e.target as HTMLImageElement).style.display = 'none'
           }}

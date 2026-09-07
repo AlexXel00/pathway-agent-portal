@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { AgentStats } from '../lib/types'
-import { formatPhp } from '../lib/format'
+import { formatPhp, getAgentInitials } from '../lib/format'
 
 export default function Agents() {
   const [stats, setStats] = useState<AgentStats[]>([])
@@ -51,7 +51,9 @@ export default function Agents() {
                   >
                     {i + 1}
                   </span>
-                  <strong>{s.name}</strong>
+                  <strong>
+                    {s.name} ({getAgentInitials(s.name)})
+                  </strong>
                   {s.is_admin && <span className="badge badge-neutral">Admin</span>}
                 </div>
                 <div style={{ display: 'flex', gap: 20, fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
