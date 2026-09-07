@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, MEDIA_BUCKET } from '../lib/supabase'
 import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '../lib/types'
-import { COMMON_TAGS } from '../lib/constants'
+import { COMMON_TAGS, PALAWAN_MUNICIPALITIES } from '../lib/constants'
 
 const TYPES: PropertyType[] = [
   'Residential',
@@ -344,7 +344,14 @@ export default function AdminNewListing() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div className="field">
             <label htmlFor="municipality">Municipality</label>
-            <input id="municipality" type="text" value={municipality} onChange={(e) => setMunicipality(e.target.value)} />
+            <select id="municipality" value={municipality} onChange={(e) => setMunicipality(e.target.value)}>
+              <option value="">- Select -</option>
+              {PALAWAN_MUNICIPALITIES.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="field">
             <label htmlFor="barangay">Barangay</label>
