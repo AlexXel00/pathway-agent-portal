@@ -33,21 +33,22 @@ export default function Layout() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 20,
-            padding: '14px 24px',
+            gap: 24,
+            padding: '20px 24px',
             flexWrap: 'wrap',
+            minHeight: 96,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginRight: 8 }}>
             <img
               src={LOGO_URL}
               alt="Pathway"
-              style={{ width: 60, height: 60, objectFit: 'contain' }}
+              style={{ width: 96, height: 96, objectFit: 'contain' }}
               onError={(e) => {
                 ;(e.target as HTMLImageElement).style.display = 'none'
               }}
             />
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '1.1rem' }}>
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '1.3rem' }}>
               Pathway
             </span>
           </div>
