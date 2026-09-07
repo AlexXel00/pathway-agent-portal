@@ -13,6 +13,10 @@ export type ListingStatus = 'Active' | 'Sold' | 'On Hold' | 'Withdrawn'
 
 export type Broker = 'Jason' | 'Catherine' | 'Other'
 
+// A special access tier on top of is_admin - independent of it. 'Marketing' unlocks the
+// Marketing Material and Request pages; 'Broker' is just a label for now.
+export type AgentRole = 'Agent' | 'Marketing' | 'Broker'
+
 export interface Agent {
   id: string
   user_id: string | null
@@ -23,7 +27,24 @@ export interface Agent {
   // The head admin's admin rights cannot be revoked by anyone, including other admins -
   // enforced by a database trigger, not just hidden in the UI.
   is_head_admin: boolean
+  role: AgentRole
   notes: string | null
+  created_at: string
+}
+
+export interface MarketingMaterial {
+  id: string
+  title: string
+  description: string | null
+  url: string
+  created_by: string | null
+  created_at: string
+}
+
+export interface MarketingRequest {
+  id: string
+  sender_agent_id: string
+  message: string
   created_at: string
 }
 

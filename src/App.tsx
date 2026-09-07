@@ -9,6 +9,8 @@ import Agents from './pages/Agents'
 import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
 import AdminAgents from './pages/AdminAgents'
+import MarketingMaterial from './pages/MarketingMaterial'
+import MarketingRequests from './pages/MarketingRequests'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -21,6 +23,14 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   const { agent, loading } = useAuth()
   if (loading) return <FullScreenMessage text="Loading..." />
   if (!agent?.is_admin) return <Navigate to="/listings" replace />
+  return <>{children}</>
+}
+
+// Marketing material and requests are visible to admins and to the Marketing role.
+function MarketingOnly({ children }: { children: React.ReactNode }) {
+  const { agent, loading } = useAuth()
+  if (loading) return <FullScreenMessage text="Loading..." />
+  if (!agent?.is_admin && agent?.role !== 'Marketing') return <Navigate to="/listings" replace />
   return <>{children}</>
 }
 
@@ -71,6 +81,22 @@ function AppRoutes() {
             <AdminOnly>
               <AdminAgents />
             </AdminOnly>
+          }
+        />
+        <Route
+          path="/marketing-material"
+          element={
+            <MarketingOnly>
+              <MarketingMaterial />
+            </MarketingOnly>
+          }
+        />
+        <Route
+          path="/marketing-requests"
+          element={
+            <MarketingOnly>
+              <MarketingRequests />
+            </MarketingOnly>
           }
         />
       </Route>

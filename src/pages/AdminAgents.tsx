@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Agent } from '../lib/types'
+import type { Agent, AgentRole } from '../lib/types'
 import { getAgentInitials } from '../lib/format'
+
+const ROLES: AgentRole[] = ['Agent', 'Marketing', 'Broker']
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<Agent[]>([])
@@ -9,6 +11,7 @@ export default function AdminAgents() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [role, setRole] = useState<AgentRole>('Agent')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,7 +30,7 @@ export default function AdminAgents() {
     e.preventDefault()
     setError(null)
     setSaving(true)
-    const { error } = await supabase.from('agents').insert({ name, email, phone: phone || null, is_admin: false })
+    const { error } = await supabase.from('agents').insert({ name, email, phone: phone || null, is_admin: false, role })
     setSaving(false)
     if (error) {
       setError(error.message)
@@ -36,6 +39,7 @@ export default function AdminAgents() {
     setName('')
     setEmail('')
     setPhone('')
+    setRole('Agent')
     load()
   }
 
@@ -67,6 +71,16 @@ export default function AdminAgents() {
           <label htmlFor="phone">Phone (optional)</label>
           <input id="phone" type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
+        <div className="field">
+          <label htmlFor="role">Role</label>
+          <select id="role" value={role} onChange={(e) => setRole(e.target.value as AgentRole)}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
         {error && <p style={{ color: 'var(--color-danger)', fontSize: '0.85rem' }}>{error}</p>}
         <button type="submit" className="btn btn-primary" disabled={saving}>
           {saving ? 'Adding...' : 'Add agent'}
@@ -85,8 +99,10 @@ export default function AdminAgents() {
                   {a.name} ({getAgentInitials(a.name)})
                 </strong>
                 {a.is_head_admin && <span className="badge badge-active" style={{ marginLeft: 8 }}>Head Admin</span>}
+                {a.role !== 'Agent' && <span className="badge badge-neutral" style={{ marginLeft: 8 }}>{a.role}</span>}
                 <div style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>
                   {a.email ?? 'no email yet'} {a.phone ? `- ${a.phone}` : ''}
+                  {a.notes ? ` - ${a.notes}` : ''}
                 </div>
                 <div style={{ fontSize: '0.76rem', color: a.user_id ? 'var(--color-success)' : 'var(--color-secondary)' }}>
                   {a.user_id ? 'Account linked' : 'Waiting for sign-up'}
