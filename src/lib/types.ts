@@ -118,6 +118,28 @@ export interface AgentActivity {
   updated_at: string
 }
 
+// Either a 1:1 direct message between two agents, or the single shared 'General' channel
+// (is_group = true) that every signed-in agent can read and post to.
+export interface ChatChannel {
+  id: string
+  is_group: boolean
+  name: string | null
+  created_at: string
+}
+
+export interface ChatChannelMember {
+  channel_id: string
+  agent_id: string
+}
+
+export interface ChatMessage {
+  id: string
+  channel_id: string
+  sender_agent_id: string
+  message: string
+  created_at: string
+}
+
 export type CompanyCategory = 'Our Values' | 'Our Services' | 'FAQ' | 'Marketing Guide'
 
 export interface CompanyInfo {

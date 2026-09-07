@@ -10,6 +10,7 @@ import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
+import Chat from './pages/Chat'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="/my-activity" element={<MyActivity />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/company" element={<CompanyInfo />} />
+        <Route path="/chat" element={<Chat />} />
         <Route
           path="/admin/new-listing"
           element={
