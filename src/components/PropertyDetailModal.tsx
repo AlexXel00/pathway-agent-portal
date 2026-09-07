@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Agent, AgentActivity, Property } from '../lib/types'
@@ -12,6 +13,7 @@ interface Props {
 
 export default function PropertyDetailModal({ property, agentsById, onClose }: Props) {
   const { agent } = useAuth()
+  const navigate = useNavigate()
   const [activity, setActivity] = useState<AgentActivity | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -134,9 +136,16 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 {property.internal_code ? ` - ${property.internal_code}` : ''}
               </p>
             </div>
-            <button className="btn btn-ghost" onClick={onClose}>
-              Close
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              {agent?.is_admin && (
+                <button className="btn btn-outline" onClick={() => navigate(`/admin/edit-listing/${property.id}`)}>
+                  Edit listing
+                </button>
+              )}
+              <button className="btn btn-ghost" onClick={onClose}>
+                Close
+              </button>
+            </div>
           </div>
 
           <div

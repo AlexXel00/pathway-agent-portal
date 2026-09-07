@@ -1,12 +1,13 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, MEDIA_BUCKET } from '../lib/supabase'
-import type { Agent, Broker, PropertyType, StructureType } from '../lib/types'
+import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '../lib/types'
 import { COMMON_TAGS } from '../lib/constants'
 
 const TYPES: PropertyType[] = ['Commercial', 'Residential', 'Apartment/Condo', 'Agricultural', 'A&D', 'Other']
 const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Other']
 const BROKERS: Broker[] = ['Jason', 'Catherine', 'Other']
+const STATUSES: ListingStatus[] = ['Active', 'Sold', 'On Hold', 'Withdrawn']
 
 function slugify(input: string) {
   return input
@@ -18,6 +19,9 @@ function slugify(input: string) {
 
 export default function AdminNewListing() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const isEdit = Boolean(id)
+  const [loadingExisting, setLoadingExisting] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +53,10 @@ export default function AdminNewListing() {
   const [videoUrls, setVideoUrls] = useState('')
   const [rawMediaUrl, setRawMediaUrl] = useState('')
   const [editedMediaUrl, setEditedMediaUrl] = useState('')
+  const [listingStatus, setListingStatus] = useState<ListingStatus>('Active')
+  const [closingAgentId, setClosingAgentId] = useState('')
+  const [actualCommission, setActualCommission] = useState('')
+  const [saleDate, setSaleDate] = useState('')
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
@@ -60,6 +68,55 @@ export default function AdminNewListing() {
       .order('name')
       .then(({ data }) => setAgents(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    async function loadExisting() {
+      const { data, error: fetchError } = await supabase.from('properties').select('*').eq('id', id).single()
+      if (cancelled) return
+      if (fetchError || !data) {
+        setError(fetchError?.message ?? 'Listing not found.')
+        setLoadingExisting(false)
+        return
+      }
+      setName(data.name ?? '')
+      setInternalCode(data.internal_code ?? '')
+      setMunicipality(data.municipality ?? '')
+      setBarangay(data.barangay ?? '')
+      setType((data.type as PropertyType) ?? 'Residential')
+      setTitleStatus(data.title_status ?? '')
+      setHasStructure(data.has_structure ?? false)
+      setStructureType((data.structure_type as StructureType) ?? 'House')
+      setStructureSize(data.structure_size_sqm != null ? String(data.structure_size_sqm) : '')
+      setLotSize(data.lot_size_sqm != null ? String(data.lot_size_sqm) : '')
+      setSellingPoint(data.special_selling_point ?? '')
+      setTags(data.tags ?? [])
+      setDescription(data.description ?? '')
+      setPriceTotal(data.price_total_php != null ? String(data.price_total_php) : '')
+      setApproxCommission(data.approx_commission_php != null ? String(data.approx_commission_php) : '')
+      setListingAgentId(data.listing_agent_id ?? '')
+      setOwnerContact(data.owner_contact_name ?? '')
+      setIsDirectOwner(data.is_direct_owner ?? true)
+      setBroker((data.broker as Broker) ?? '')
+      setBrokerOtherName(data.broker_other_name ?? '')
+      setBrokerContact(data.broker_contact ?? '')
+      setMapUrl(data.map_url ?? '')
+      setVideoUrls((data.videos ?? []).join('\n'))
+      setRawMediaUrl(data.raw_media_url ?? '')
+      setEditedMediaUrl(data.edited_media_url ?? '')
+      setPhotoUrls(data.photos ?? [])
+      setListingStatus((data.listing_status as ListingStatus) ?? 'Active')
+      setClosingAgentId(data.closing_agent_id ?? '')
+      setActualCommission(data.actual_commission_php != null ? String(data.actual_commission_php) : '')
+      setSaleDate(data.sale_date ?? '')
+      setLoadingExisting(false)
+    }
+    loadExisting()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   function toggleTag(tag: string) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
@@ -113,42 +170,46 @@ export default function AdminNewListing() {
     e.preventDefault()
     setError(null)
     setSaving(true)
-    const { data, error } = await supabase
-      .from('properties')
-      .insert({
-        name,
-        internal_code: internalCode || null,
-        municipality: municipality || null,
-        barangay: barangay || null,
-        type,
-        title_status: titleStatus || null,
-        has_structure: hasStructure,
-        structure_type: hasStructure ? structureType : null,
-        structure_size_sqm: hasStructure && structureSize ? Number(structureSize) : null,
-        lot_size_sqm: lotSize ? Number(lotSize) : null,
-        special_selling_point: sellingPoint || null,
-        tags,
-        description: description || null,
-        price_total_php: priceTotal ? Number(priceTotal) : null,
-        approx_commission_php: approxCommission ? Number(approxCommission) : null,
-        listing_agent_id: listingAgentId || null,
-        owner_contact_name: ownerContact || null,
-        is_direct_owner: isDirectOwner,
-        broker: broker || null,
-        broker_other_name: broker === 'Other' ? brokerOtherName || null : null,
-        broker_contact: broker ? brokerContact || null : null,
-        photos: photoUrls,
-        videos: videoUrls
-          .split(/\n|,/)
-          .map((v) => v.trim())
-          .filter(Boolean),
-        map_url: mapUrl || null,
-        raw_media_url: rawMediaUrl || null,
-        edited_media_url: editedMediaUrl || null,
-        listing_status: 'Active',
-      })
-      .select()
-      .single()
+
+    const payload = {
+      name,
+      internal_code: internalCode || null,
+      municipality: municipality || null,
+      barangay: barangay || null,
+      type,
+      title_status: titleStatus || null,
+      has_structure: hasStructure,
+      structure_type: hasStructure ? structureType : null,
+      structure_size_sqm: hasStructure && structureSize ? Number(structureSize) : null,
+      lot_size_sqm: lotSize ? Number(lotSize) : null,
+      special_selling_point: sellingPoint || null,
+      tags,
+      description: description || null,
+      price_total_php: priceTotal ? Number(priceTotal) : null,
+      approx_commission_php: approxCommission ? Number(approxCommission) : null,
+      listing_agent_id: listingAgentId || null,
+      owner_contact_name: ownerContact || null,
+      is_direct_owner: isDirectOwner,
+      broker: broker || null,
+      broker_other_name: broker === 'Other' ? brokerOtherName || null : null,
+      broker_contact: broker ? brokerContact || null : null,
+      photos: photoUrls,
+      videos: videoUrls
+        .split(/\n|,/)
+        .map((v) => v.trim())
+        .filter(Boolean),
+      map_url: mapUrl || null,
+      raw_media_url: rawMediaUrl || null,
+      edited_media_url: editedMediaUrl || null,
+      listing_status: isEdit ? listingStatus : ('Active' as ListingStatus),
+      closing_agent_id: isEdit && listingStatus === 'Sold' ? closingAgentId || null : null,
+      actual_commission_php: isEdit && listingStatus === 'Sold' && actualCommission ? Number(actualCommission) : null,
+      sale_date: isEdit && listingStatus === 'Sold' && saleDate ? saleDate : null,
+    }
+
+    const { data, error } = isEdit
+      ? await supabase.from('properties').update(payload).eq('id', id).select().single()
+      : await supabase.from('properties').insert(payload).select().single()
 
     setSaving(false)
     if (error) {
@@ -160,14 +221,67 @@ export default function AdminNewListing() {
     void data
   }
 
+  if (loadingExisting) {
+    return <p style={{ color: 'var(--color-secondary)' }}>Loading listing...</p>
+  }
+
   return (
     <div style={{ maxWidth: 720 }}>
-      <h1>New Listing</h1>
+      <h1>{isEdit ? 'Edit Listing' : 'New Listing'}</h1>
       <p style={{ color: 'var(--color-secondary)', marginBottom: 24 }}>
-        Fill in the details, add photos, and publish - it appears in Listings immediately.
+        {isEdit
+          ? 'Update the details below - changes are visible in Listings immediately.'
+          : 'Fill in the details, add photos, and publish - it appears in Listings immediately.'}
       </p>
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: '28px 30px' }}>
+        {isEdit && (
+          <div style={{ display: 'grid', gridTemplateColumns: listingStatus === 'Sold' ? '1fr 1fr' : '1fr', gap: 16 }}>
+            <div className="field">
+              <label htmlFor="listingStatus">Listing status</label>
+              <select id="listingStatus" value={listingStatus} onChange={(e) => setListingStatus(e.target.value as ListingStatus)}>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {listingStatus === 'Sold' && (
+              <div className="field">
+                <label htmlFor="closingAgent">Closing agent</label>
+                <select id="closingAgent" value={closingAgentId} onChange={(e) => setClosingAgentId(e.target.value)}>
+                  <option value="">- None -</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isEdit && listingStatus === 'Sold' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="field">
+              <label htmlFor="actualCommission">Actual commission (PHP)</label>
+              <input
+                id="actualCommission"
+                type="number"
+                min="0"
+                value={actualCommission}
+                onChange={(e) => setActualCommission(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="saleDate">Sale date</label>
+              <input id="saleDate" type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
+            </div>
+          </div>
+        )}
+
         <div className="field">
           <label htmlFor="name">Property name</label>
           <input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} />
@@ -431,10 +545,12 @@ export default function AdminNewListing() {
         </div>
 
         {error && <p style={{ color: 'var(--color-danger)', fontSize: '0.88rem' }}>{error}</p>}
-        {success && <p style={{ color: 'var(--color-success)', fontSize: '0.88rem' }}>Listing created!</p>}
+        {success && (
+          <p style={{ color: 'var(--color-success)', fontSize: '0.88rem' }}>{isEdit ? 'Listing updated!' : 'Listing created!'}</p>
+        )}
 
         <button type="submit" className="btn btn-primary" disabled={saving || uploadingPhotos} style={{ marginTop: 10 }}>
-          {saving ? 'Publishing...' : 'Publish listing'}
+          {saving ? 'Saving...' : isEdit ? 'Save changes' : 'Publish listing'}
         </button>
       </form>
     </div>

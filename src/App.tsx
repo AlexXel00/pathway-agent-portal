@@ -58,6 +58,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/admin/edit-listing/:id"
+          element={
+            <AdminOnly>
+              <AdminNewListing />
+            </AdminOnly>
+          }
+        />
+        <Route
           path="/admin/agents"
           element={
             <AdminOnly>
