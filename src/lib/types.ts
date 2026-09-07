@@ -100,6 +100,8 @@ export interface Property {
   edited_media_url: string | null
   listing_status: ListingStatus
   closing_agent_id: string | null
+  // Used when the sale was closed by an agent outside our in-house roster.
+  closing_agent_other_name: string | null
   actual_commission_php: number | null
   sale_date: string | null
   created_at: string

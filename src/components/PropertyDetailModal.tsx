@@ -239,9 +239,9 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 {property.broker2_contact ? ` (${property.broker2_contact})` : ''}
               </span>
             )}
-            {property.listing_status === 'Sold' && closingAgent && (
+            {property.listing_status === 'Sold' && (closingAgent || property.closing_agent_other_name) && (
               <span>
-                <strong>Closed by:</strong> {closingAgent.name}
+                <strong>Closed by:</strong> {closingAgent ? closingAgent.name : property.closing_agent_other_name}
               </span>
             )}
           </div>

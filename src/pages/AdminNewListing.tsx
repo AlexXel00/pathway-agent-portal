@@ -67,6 +67,7 @@ export default function AdminNewListing() {
   const [editedMediaUrl, setEditedMediaUrl] = useState('')
   const [listingStatus, setListingStatus] = useState<ListingStatus>('Active')
   const [closingAgentId, setClosingAgentId] = useState('')
+  const [closingAgentOtherName, setClosingAgentOtherName] = useState('')
   const [actualCommission, setActualCommission] = useState('')
   const [saleDate, setSaleDate] = useState('')
 
@@ -126,7 +127,8 @@ export default function AdminNewListing() {
       setEditedMediaUrl(data.edited_media_url ?? '')
       setPhotoUrls(data.photos ?? [])
       setListingStatus((data.listing_status as ListingStatus) ?? 'Active')
-      setClosingAgentId(data.closing_agent_id ?? '')
+      setClosingAgentId(data.closing_agent_id ?? (data.closing_agent_other_name ? 'other' : ''))
+      setClosingAgentOtherName(data.closing_agent_other_name ?? '')
       setActualCommission(data.actual_commission_php != null ? String(data.actual_commission_php) : '')
       setSaleDate(data.sale_date ?? '')
       setLoadingExisting(false)
@@ -239,7 +241,9 @@ export default function AdminNewListing() {
       raw_media_url: rawMediaUrl || null,
       edited_media_url: editedMediaUrl || null,
       listing_status: isEdit ? listingStatus : ('Active' as ListingStatus),
-      closing_agent_id: isEdit && listingStatus === 'Sold' ? closingAgentId || null : null,
+      closing_agent_id: isEdit && listingStatus === 'Sold' && closingAgentId !== 'other' ? closingAgentId || null : null,
+      closing_agent_other_name:
+        isEdit && listingStatus === 'Sold' && closingAgentId === 'other' ? closingAgentOtherName || null : null,
       actual_commission_php: isEdit && listingStatus === 'Sold' && actualCommission ? Number(actualCommission) : null,
       sale_date: isEdit && listingStatus === 'Sold' && saleDate ? saleDate : null,
     }
@@ -294,9 +298,22 @@ export default function AdminNewListing() {
                       {a.name}
                     </option>
                   ))}
+                  <option value="other">Other (not in-house)</option>
                 </select>
               </div>
             )}
+          </div>
+        )}
+
+        {isEdit && listingStatus === 'Sold' && closingAgentId === 'other' && (
+          <div className="field">
+            <label htmlFor="closingAgentOtherName">Closing agent name</label>
+            <input
+              id="closingAgentOtherName"
+              type="text"
+              value={closingAgentOtherName}
+              onChange={(e) => setClosingAgentOtherName(e.target.value)}
+            />
           </div>
         )}
 
