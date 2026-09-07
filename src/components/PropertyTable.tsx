@@ -46,7 +46,7 @@ export default function PropertyTable({ properties, agentsById, isAdmin, onSelec
               <Td>{p.type ?? '-'}</Td>
               <Td>{p.lot_size_sqm ? `${formatNumber(p.lot_size_sqm)} sqm` : '-'}</Td>
               <Td>{formatPhp(p.price_total_php)}</Td>
-              <Td>{p.listing_agent_id ? agentsById[p.listing_agent_id]?.name ?? '-' : '-'}</Td>
+              <Td>{p.listing_agent_id ? agentsById[p.listing_agent_id]?.name ?? '-' : p.listing_agent_other_name || '-'}</Td>
               {isAdmin && <Td>{p.owner_contact_name || '-'}</Td>}
               <Td>
                 <span

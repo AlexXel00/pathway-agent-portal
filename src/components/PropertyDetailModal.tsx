@@ -70,6 +70,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
   }
 
   const listingAgent = property.listing_agent_id ? agentsById[property.listing_agent_id] : null
+  const listingAgentName = listingAgent?.name ?? property.listing_agent_other_name
   const closingAgent = property.closing_agent_id ? agentsById[property.closing_agent_id] : null
 
   return (
@@ -198,9 +199,9 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
           )}
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.88rem', margin: '14px 0' }}>
-            {listingAgent && (
+            {listingAgentName && (
               <span>
-                <strong>Listing agent:</strong> {listingAgent.name}
+                <strong>Listing agent:</strong> {listingAgentName}
               </span>
             )}
             {agent?.is_admin && property.owner_contact_name && (

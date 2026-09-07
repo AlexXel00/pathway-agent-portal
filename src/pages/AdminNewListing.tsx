@@ -44,6 +44,7 @@ export default function AdminNewListing() {
   const [priceTotal, setPriceTotal] = useState('')
   const [approxCommission, setApproxCommission] = useState('')
   const [listingAgentId, setListingAgentId] = useState('')
+  const [listingAgentOtherName, setListingAgentOtherName] = useState('')
   const [ownerContact, setOwnerContact] = useState('')
   const [isDirectOwner, setIsDirectOwner] = useState(true)
   const [broker, setBroker] = useState<Broker | ''>('')
@@ -95,7 +96,8 @@ export default function AdminNewListing() {
       setDescription(data.description ?? '')
       setPriceTotal(data.price_total_php != null ? String(data.price_total_php) : '')
       setApproxCommission(data.approx_commission_php != null ? String(data.approx_commission_php) : '')
-      setListingAgentId(data.listing_agent_id ?? '')
+      setListingAgentId(data.listing_agent_id ?? (data.listing_agent_other_name ? 'other' : ''))
+      setListingAgentOtherName(data.listing_agent_other_name ?? '')
       setOwnerContact(data.owner_contact_name ?? '')
       setIsDirectOwner(data.is_direct_owner ?? true)
       setBroker((data.broker as Broker) ?? '')
@@ -187,7 +189,8 @@ export default function AdminNewListing() {
       description: description || null,
       price_total_php: priceTotal ? Number(priceTotal) : null,
       approx_commission_php: approxCommission ? Number(approxCommission) : null,
-      listing_agent_id: listingAgentId || null,
+      listing_agent_id: listingAgentId && listingAgentId !== 'other' ? listingAgentId : null,
+      listing_agent_other_name: listingAgentId === 'other' ? listingAgentOtherName || null : null,
       owner_contact_name: ownerContact || null,
       is_direct_owner: isDirectOwner,
       broker: broker || null,
@@ -444,6 +447,7 @@ export default function AdminNewListing() {
                   {a.name}
                 </option>
               ))}
+              <option value="other">Other (not in-house)</option>
             </select>
           </div>
           <div className="field">
@@ -451,6 +455,19 @@ export default function AdminNewListing() {
             <input id="owner" type="text" value={ownerContact} onChange={(e) => setOwnerContact(e.target.value)} />
           </div>
         </div>
+
+        {listingAgentId === 'other' && (
+          <div className="field">
+            <label htmlFor="listingAgentOtherName">Listing agent name</label>
+            <input
+              id="listingAgentOtherName"
+              type="text"
+              value={listingAgentOtherName}
+              onChange={(e) => setListingAgentOtherName(e.target.value)}
+            />
+          </div>
+        )}
+
         <p style={{ fontSize: '0.78rem', color: 'var(--color-secondary)', marginTop: -10, marginBottom: 16 }}>
           Listing agent is visible to every agent. Owner contact name is only ever shown to admins - fill in
           whichever of the two you have, or both.

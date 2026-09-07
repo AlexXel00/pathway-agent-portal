@@ -55,6 +55,8 @@ export interface Property {
   price_per_sqm_php: number | null
   approx_commission_php: number | null
   listing_agent_id: string | null
+  // Used when the listing agent is not one of our in-house agents.
+  listing_agent_other_name: string | null
   // Only populated for admins - non-admin reads (via the properties_for_agents view) always get null here.
   owner_contact_name: string | null
   is_direct_owner: boolean
