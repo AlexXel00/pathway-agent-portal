@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { MarketingMaterial } from '../lib/types'
+import MarketingRequestChat from '../components/MarketingRequestChat'
 
 export default function MarketingMaterialPage() {
   const { agent } = useAuth()
@@ -102,6 +103,10 @@ export default function MarketingMaterialPage() {
           ))}
         </div>
       )}
+
+      <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '32px 0' }} />
+
+      <MarketingRequestChat />
     </div>
   )
 }

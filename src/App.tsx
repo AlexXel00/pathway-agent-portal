@@ -10,7 +10,6 @@ import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
-import MarketingRequests from './pages/MarketingRequests'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -88,14 +87,6 @@ function AppRoutes() {
           element={
             <MarketingOnly>
               <MarketingMaterial />
-            </MarketingOnly>
-          }
-        />
-        <Route
-          path="/marketing-requests"
-          element={
-            <MarketingOnly>
-              <MarketingRequests />
             </MarketingOnly>
           }
         />
