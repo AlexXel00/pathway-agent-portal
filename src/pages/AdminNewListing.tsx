@@ -361,13 +361,14 @@ export default function AdminNewListing() {
 
         <div className="field">
           <label htmlFor="titleStatus">Title status</label>
-          <input
-            id="titleStatus"
-            type="text"
-            placeholder="e.g. Titled (TCT), Tax Declaration, Free Patent, A&D"
-            value={titleStatus}
-            onChange={(e) => setTitleStatus(e.target.value)}
-          />
+          <select id="titleStatus" value={titleStatus} onChange={(e) => setTitleStatus(e.target.value)}>
+            <option value="">- Select -</option>
+            {TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </div>
 
         <label className="checkbox-row" style={{ marginBottom: 12 }}>
