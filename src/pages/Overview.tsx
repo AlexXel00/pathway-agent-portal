@@ -35,10 +35,6 @@ export default function Overview() {
   const sold = useMemo(() => properties.filter((p) => p.listing_status === 'Sold'), [properties])
 
   const totalActiveValue = useMemo(() => active.reduce((sum, p) => sum + (p.price_total_php ?? 0), 0), [active])
-  const totalCommissionEarned = useMemo(
-    () => sold.reduce((sum, p) => sum + (p.actual_commission_php ?? p.approx_commission_php ?? 0), 0),
-    [sold]
-  )
 
   const byLocation = useMemo(() => toChartData(groupBy(active, (p) => p.municipality || 'Unknown')), [active])
   const byType = useMemo(() => toChartData(groupBy(active, (p) => p.type || 'Other')), [active])
@@ -65,7 +61,6 @@ export default function Overview() {
         <StatCard label="Active listings" value={String(active.length)} />
         <StatCard label="Total value (active)" value={formatPhp(totalActiveValue)} />
         <StatCard label="Closed sales" value={String(sold.length)} />
-        <StatCard label="Commission earned" value={formatPhp(totalCommissionEarned)} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24 }}>

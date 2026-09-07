@@ -57,7 +57,6 @@ export default function Agents() {
                 <div style={{ display: 'flex', gap: 20, fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
                   <span>{s.total_sales_count} sales</span>
                   <span>{formatPhp(s.total_sale_value_php)}</span>
-                  <span>{formatPhp(s.total_commission_php)} commission</span>
                 </div>
               </div>
               <div style={{ height: 8, borderRadius: 999, background: 'var(--color-beige)', overflow: 'hidden' }}>

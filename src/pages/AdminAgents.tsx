@@ -39,6 +39,7 @@ export default function AdminAgents() {
   }
 
   async function toggleAdmin(agent: Agent) {
+    if (agent.is_head_admin) return
     await supabase.from('agents').update({ is_admin: !agent.is_admin }).eq('id', agent.id)
     load()
   }
@@ -80,6 +81,7 @@ export default function AdminAgents() {
             <div key={a.id} className="card" style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <strong>{a.name}</strong>
+                {a.is_head_admin && <span className="badge badge-active" style={{ marginLeft: 8 }}>Head Admin</span>}
                 <div style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>
                   {a.email ?? 'no email yet'} {a.phone ? `- ${a.phone}` : ''}
                 </div>
@@ -87,10 +89,16 @@ export default function AdminAgents() {
                   {a.user_id ? 'Account linked' : 'Waiting for sign-up'}
                 </div>
               </div>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={a.is_admin} onChange={() => toggleAdmin(a)} />
-                Admin
-              </label>
+              {a.is_head_admin ? (
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-secondary)' }}>
+                  Admin rights protected
+                </span>
+              ) : (
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={a.is_admin} onChange={() => toggleAdmin(a)} />
+                  Admin
+                </label>
+              )}
             </div>
           ))}
         </div>

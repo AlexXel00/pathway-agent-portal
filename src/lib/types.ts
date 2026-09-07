@@ -20,6 +20,9 @@ export interface Agent {
   email: string | null
   phone: string | null
   is_admin: boolean
+  // The head admin's admin rights cannot be revoked by anyone, including other admins -
+  // enforced by a database trigger, not just hidden in the UI.
+  is_head_admin: boolean
   notes: string | null
   created_at: string
 }
@@ -32,7 +35,8 @@ export interface AgentStats {
   is_admin: boolean
   total_sales_count: number
   total_sale_value_php: number
-  total_commission_php: number
+  // Only populated for admins and for the agent's own row - masked to null otherwise.
+  total_commission_php: number | null
   advertised_count: number
   potential_buyer_count: number
 }
