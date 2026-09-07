@@ -90,7 +90,7 @@ export interface AgentActivity {
   property_id: string
   agent_id: string
   advertised: boolean
-  advertised_where: string | null
+  advertised_where: string[]
   has_potential_buyer: boolean
   was_shown: boolean
   notes: string | null

@@ -1,3 +1,14 @@
+export const ADVERTISED_CHANNELS: string[] = [
+  'Facebook (Official Page)',
+  'Facebook (Private Page)',
+  'Facebook (Group)',
+  'Instagram (Official Page)',
+  'Instagram (Private Page)',
+  'LinkedIn',
+  'TikTok',
+  'Other',
+]
+
 export const PALAWAN_MUNICIPALITIES: string[] = [
   "Aborlan",
   "Agutaya",

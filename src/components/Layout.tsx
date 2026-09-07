@@ -1,8 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const LOGO_URL =
-  'https://vryeqtjnefdlqprzglmp.supabase.co/storage/v1/object/public/property-media/brand/pathway-logo.jpg'
+const LOGO_URL = `${import.meta.env.BASE_URL}pathway-logo.png`
 
 const navLinkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties => ({
   padding: '8px 14px',

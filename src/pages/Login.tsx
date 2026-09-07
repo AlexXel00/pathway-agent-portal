@@ -3,8 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const LOGO_URL =
-  'https://vryeqtjnefdlqprzglmp.supabase.co/storage/v1/object/public/property-media/brand/pathway-logo.jpg'
+const LOGO_URL = `${import.meta.env.BASE_URL}pathway-logo.png`
 
 export default function Login() {
   const { session, loading } = useAuth()

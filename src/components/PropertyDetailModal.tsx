@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Agent, AgentActivity, Property } from '../lib/types'
-import { formatPhp, formatNumber } from '../lib/format'
+import { formatPhp, formatNumber, getAgentInitials } from '../lib/format'
+import { ADVERTISED_CHANNELS } from '../lib/constants'
 
 interface Props {
   property: Property
@@ -15,10 +16,11 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
   const { agent } = useAuth()
   const navigate = useNavigate()
   const [activity, setActivity] = useState<AgentActivity | null>(null)
+  const [allActivity, setAllActivity] = useState<AgentActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [advertised, setAdvertised] = useState(false)
-  const [advertisedWhere, setAdvertisedWhere] = useState('')
+  const [advertisedWhere, setAdvertisedWhere] = useState<string[]>([])
   const [hasPotentialBuyer, setHasPotentialBuyer] = useState(false)
   const [wasShown, setWasShown] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
@@ -28,18 +30,18 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
     async function load() {
       if (!agent) return
       setLoading(true)
-      const { data } = await supabase
-        .from('agent_activity')
-        .select('*')
-        .eq('property_id', property.id)
-        .eq('agent_id', agent.id)
-        .maybeSingle()
+      // Load every agent's activity on this listing, not just our own, so everyone can see
+      // at a glance who already advertised it or has a potential buyer.
+      const { data: rows } = await supabase.from('agent_activity').select('*').eq('property_id', property.id)
       if (cancelled) return
-      setActivity(data ?? null)
-      setAdvertised(data?.advertised ?? false)
-      setAdvertisedWhere(data?.advertised_where ?? '')
-      setHasPotentialBuyer(data?.has_potential_buyer ?? false)
-      setWasShown(data?.was_shown ?? false)
+      const all = rows ?? []
+      setAllActivity(all)
+      const own = all.find((r) => r.agent_id === agent.id) ?? null
+      setActivity(own)
+      setAdvertised(own?.advertised ?? false)
+      setAdvertisedWhere(own?.advertised_where ?? [])
+      setHasPotentialBuyer(own?.has_potential_buyer ?? false)
+      setWasShown(own?.was_shown ?? false)
       setLoading(false)
     }
     load()
@@ -48,6 +50,10 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
     }
   }, [property.id, agent])
 
+  function toggleAdvertisedWhere(channel: string) {
+    setAdvertisedWhere((prev) => (prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]))
+  }
+
   async function save() {
     if (!agent) return
     setSaving(true)
@@ -55,7 +61,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
       property_id: property.id,
       agent_id: agent.id,
       advertised,
-      advertised_where: advertised ? advertisedWhere : null,
+      advertised_where: advertised ? advertisedWhere : [],
       has_potential_buyer: hasPotentialBuyer,
       was_shown: wasShown,
       updated_at: new Date().toISOString(),
@@ -66,8 +72,20 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
       .select()
       .single()
     setSaving(false)
-    if (!error) setActivity(data)
+    if (!error && data) {
+      setActivity(data)
+      setAllActivity((prev) => [...prev.filter((r) => r.agent_id !== agent.id), data])
+    }
   }
+
+  const advertisedByInitials = allActivity
+    .filter((r) => r.advertised)
+    .map((r) => (agentsById[r.agent_id] ? getAgentInitials(agentsById[r.agent_id].name) : null))
+    .filter((v): v is string => Boolean(v))
+  const potentialBuyerByInitials = allActivity
+    .filter((r) => r.has_potential_buyer)
+    .map((r) => (agentsById[r.agent_id] ? getAgentInitials(agentsById[r.agent_id].name) : null))
+    .filter((v): v is string => Boolean(v))
 
   const listingAgent = property.listing_agent_id ? agentsById[property.listing_agent_id] : null
   const listingAgentName = listingAgent?.name ?? property.listing_agent_other_name
@@ -262,16 +280,37 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 <input type="checkbox" checked={advertised} onChange={(e) => setAdvertised(e.target.checked)} />
                 I advertised this listing
               </label>
+              {advertisedByInitials.length > 0 && (
+                <p style={{ margin: '-6px 0 0 24px', fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
+                  Advertised by: {advertisedByInitials.join(', ')}
+                </p>
+              )}
               {advertised && (
-                <div className="field" style={{ marginLeft: 24, marginBottom: 0 }}>
-                  <label htmlFor="where">Where?</label>
-                  <input
-                    id="where"
-                    type="text"
-                    placeholder="e.g. Facebook, Instagram, personal network"
-                    value={advertisedWhere}
-                    onChange={(e) => setAdvertisedWhere(e.target.value)}
-                  />
+                <div style={{ marginLeft: 24, marginBottom: 0 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>
+                    Where? (select all that apply)
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {ADVERTISED_CHANNELS.map((channel) => {
+                      const active = advertisedWhere.includes(channel)
+                      return (
+                        <button
+                          key={channel}
+                          type="button"
+                          onClick={() => toggleAdvertisedWhere(channel)}
+                          className="badge"
+                          style={{
+                            cursor: 'pointer',
+                            border: 'none',
+                            background: active ? 'var(--color-primary)' : 'var(--color-beige)',
+                            color: active ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                          }}
+                        >
+                          {channel}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
               <label className="checkbox-row">
@@ -282,6 +321,11 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                 />
                 I have a potential buyer
               </label>
+              {potentialBuyerByInitials.length > 0 && (
+                <p style={{ margin: '-6px 0 0 24px', fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
+                  Potential buyer noted by: {potentialBuyerByInitials.join(', ')}
+                </p>
+              )}
               <label className="checkbox-row">
                 <input type="checkbox" checked={wasShown} onChange={(e) => setWasShown(e.target.checked)} />
                 I showed this listing
