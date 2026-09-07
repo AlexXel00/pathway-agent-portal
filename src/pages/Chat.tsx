@@ -52,7 +52,7 @@ export default function Chat() {
 
     const infos: ChannelInfo[] = (allChannels ?? []).map((c) => {
       const isMine = c.is_group || myChannelIds.has(c.id)
-      let label = 'General (all agents)'
+      let label = 'All Agents'
       if (!c.is_group) {
         const names = (membersByChannel[c.id] ?? []).filter((n) => n !== agent?.name)
         label = names.length > 0 ? names.join(', ') : 'Direct message'
@@ -159,7 +159,10 @@ export default function Chat() {
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ padding: '16px 18px' }}>
-            <h3 style={{ fontSize: '0.9rem', marginBottom: 10 }}>Conversations</h3>
+            <h3 style={{ fontSize: '0.9rem', marginBottom: 4 }}>Conversations</h3>
+            <p style={{ color: 'var(--color-secondary)', fontSize: '0.76rem', marginBottom: 10 }}>
+              "All Agents" reaches the whole team.
+            </p>
             {loading ? (
               <p style={{ color: 'var(--color-secondary)', fontSize: '0.85rem' }}>Loading...</p>
             ) : (
