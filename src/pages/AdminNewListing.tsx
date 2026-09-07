@@ -4,8 +4,16 @@ import { supabase, MEDIA_BUCKET } from '../lib/supabase'
 import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '../lib/types'
 import { COMMON_TAGS } from '../lib/constants'
 
-const TYPES: PropertyType[] = ['Commercial', 'Residential', 'Apartment/Condo', 'Agricultural', 'A&D', 'Other']
-const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Other']
+const TYPES: PropertyType[] = [
+  'Residential',
+  'Commercial',
+  'Apartment/Condo',
+  'Agricultural',
+  'A&D',
+  'Ready for Titling',
+  'Other',
+]
+const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Farm', 'Other']
 const BROKERS: Broker[] = ['Jason', 'Catherine', 'Other']
 const STATUSES: ListingStatus[] = ['Active', 'Sold', 'On Hold', 'Withdrawn']
 
@@ -34,7 +42,7 @@ export default function AdminNewListing() {
   const [type, setType] = useState<PropertyType>('Residential')
   const [titleStatus, setTitleStatus] = useState('')
   const [hasStructure, setHasStructure] = useState(false)
-  const [structureType, setStructureType] = useState<StructureType>('House')
+  const [structureTypes, setStructureTypes] = useState<StructureType[]>([])
   const [structureSize, setStructureSize] = useState('')
   const [lotSize, setLotSize] = useState('')
   const [sellingPoint, setSellingPoint] = useState('')
@@ -50,6 +58,9 @@ export default function AdminNewListing() {
   const [broker, setBroker] = useState<Broker | ''>('')
   const [brokerOtherName, setBrokerOtherName] = useState('')
   const [brokerContact, setBrokerContact] = useState('')
+  const [broker2, setBroker2] = useState<Broker | ''>('')
+  const [broker2OtherName, setBroker2OtherName] = useState('')
+  const [broker2Contact, setBroker2Contact] = useState('')
   const [mapUrl, setMapUrl] = useState('')
   const [videoUrls, setVideoUrls] = useState('')
   const [rawMediaUrl, setRawMediaUrl] = useState('')
@@ -61,6 +72,9 @@ export default function AdminNewListing() {
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
+  // Tracks whether the commission field still holds our auto-computed suggestion (true) or
+  // was overwritten by hand (false) - once edited manually we stop recalculating it.
+  const [commissionAuto, setCommissionAuto] = useState(!isEdit)
 
   useEffect(() => {
     supabase
@@ -88,7 +102,7 @@ export default function AdminNewListing() {
       setType((data.type as PropertyType) ?? 'Residential')
       setTitleStatus(data.title_status ?? '')
       setHasStructure(data.has_structure ?? false)
-      setStructureType((data.structure_type as StructureType) ?? 'House')
+      setStructureTypes((data.structure_types as StructureType[]) ?? [])
       setStructureSize(data.structure_size_sqm != null ? String(data.structure_size_sqm) : '')
       setLotSize(data.lot_size_sqm != null ? String(data.lot_size_sqm) : '')
       setSellingPoint(data.special_selling_point ?? '')
@@ -103,6 +117,9 @@ export default function AdminNewListing() {
       setBroker((data.broker as Broker) ?? '')
       setBrokerOtherName(data.broker_other_name ?? '')
       setBrokerContact(data.broker_contact ?? '')
+      setBroker2((data.broker2 as Broker) ?? '')
+      setBroker2OtherName(data.broker2_other_name ?? '')
+      setBroker2Contact(data.broker2_contact ?? '')
       setMapUrl(data.map_url ?? '')
       setVideoUrls((data.videos ?? []).join('\n'))
       setRawMediaUrl(data.raw_media_url ?? '')
@@ -124,6 +141,10 @@ export default function AdminNewListing() {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
+  function toggleStructureType(t: StructureType) {
+    setStructureTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
+  }
+
   function addCustomTag() {
     const value = customTag.trim()
     if (value && !tags.includes(value)) {
@@ -132,13 +153,23 @@ export default function AdminNewListing() {
     setCustomTag('')
   }
 
-  // Default commission suggestion: 5% of price, matching Pathway's standard rule
-  function onPriceBlur() {
+  // Selling agent commission, matching Pathway's standard rule: total pool is 5% of the
+  // price; if there is a broker on the deal, they take 1% of the price off the top
+  // (shared between two brokers if both are set, so the broker cut is always 1% total),
+  // and the selling agent gets 30% of whatever remains.
+  useEffect(() => {
+    if (!commissionAuto) return
     const price = Number(priceTotal)
-    if (price > 0 && !approxCommission) {
-      setApproxCommission(String(Math.round(price * 0.05)))
+    if (!(price > 0)) {
+      setApproxCommission('')
+      return
     }
-  }
+    const totalPool = price * 0.05
+    const brokerCut = broker || broker2 ? price * 0.01 : 0
+    const agentCommission = (totalPool - brokerCut) * 0.3
+    setApproxCommission(String(Math.round(agentCommission)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceTotal, broker, broker2, commissionAuto])
 
   async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
@@ -181,7 +212,7 @@ export default function AdminNewListing() {
       type,
       title_status: titleStatus || null,
       has_structure: hasStructure,
-      structure_type: hasStructure ? structureType : null,
+      structure_types: hasStructure ? structureTypes : [],
       structure_size_sqm: hasStructure && structureSize ? Number(structureSize) : null,
       lot_size_sqm: lotSize ? Number(lotSize) : null,
       special_selling_point: sellingPoint || null,
@@ -196,6 +227,9 @@ export default function AdminNewListing() {
       broker: broker || null,
       broker_other_name: broker === 'Other' ? brokerOtherName || null : null,
       broker_contact: broker ? brokerContact || null : null,
+      broker2: broker2 || null,
+      broker2_other_name: broker2 === 'Other' ? broker2OtherName || null : null,
+      broker2_contact: broker2 ? broker2Contact || null : null,
       photos: photoUrls,
       videos: videoUrls
         .split(/\n|,/)
@@ -335,22 +369,36 @@ export default function AdminNewListing() {
         </label>
 
         {hasStructure && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <>
             <div className="field">
-              <label htmlFor="structureType">Structure type</label>
-              <select id="structureType" value={structureType} onChange={(e) => setStructureType(e.target.value as StructureType)}>
-                {STRUCTURE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <label>Structure type (select all that apply)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {STRUCTURE_TYPES.map((t) => {
+                  const active = structureTypes.includes(t)
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => toggleStructureType(t)}
+                      className="badge"
+                      style={{
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: active ? 'var(--color-primary)' : 'var(--color-beige)',
+                        color: active ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <div className="field">
               <label htmlFor="structureSize">Structure size (sqm)</label>
               <input id="structureSize" type="number" min="0" value={structureSize} onChange={(e) => setStructureSize(e.target.value)} />
             </div>
-          </div>
+          </>
         )}
 
         <div className="field">
@@ -426,15 +474,25 @@ export default function AdminNewListing() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div className="field">
             <label htmlFor="price">Price total (PHP)</label>
-            <input id="price" type="number" min="0" value={priceTotal} onChange={(e) => setPriceTotal(e.target.value)} onBlur={onPriceBlur} />
+            <input id="price" type="number" min="0" value={priceTotal} onChange={(e) => setPriceTotal(e.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="commission">Approx. commission (PHP)</label>
-            <input id="commission" type="number" min="0" value={approxCommission} onChange={(e) => setApproxCommission(e.target.value)} />
+            <label htmlFor="commission">Selling agent commission (PHP)</label>
+            <input
+              id="commission"
+              type="number"
+              min="0"
+              value={approxCommission}
+              onChange={(e) => {
+                setApproxCommission(e.target.value)
+                setCommissionAuto(false)
+              }}
+            />
           </div>
         </div>
         <p style={{ fontSize: '0.78rem', color: 'var(--color-secondary)', marginTop: -10, marginBottom: 16 }}>
-          Commission auto-fills at 5% of the price when you leave the price field - adjust if needed.
+          Auto-calculated as 30% of the 5% total commission, minus 1% for the broker if one is set (shared
+          between both brokers when two are set) - edit it directly if this deal is different.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -501,6 +559,33 @@ export default function AdminNewListing() {
             <div className="field">
               <label htmlFor="brokerContact">Broker contact</label>
               <input id="brokerContact" type="text" value={brokerContact} onChange={(e) => setBrokerContact(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        <div className="field">
+          <label htmlFor="broker2">Broker 2 (if there is a second one on this deal)</label>
+          <select id="broker2" value={broker2} onChange={(e) => setBroker2(e.target.value as Broker | '')}>
+            <option value="">- None -</option>
+            {BROKERS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {broker2 && (
+          <div style={{ display: 'grid', gridTemplateColumns: broker2 === 'Other' ? '1fr 1fr' : '1fr', gap: 16 }}>
+            {broker2 === 'Other' && (
+              <div className="field">
+                <label htmlFor="broker2OtherName">Broker 2 name</label>
+                <input id="broker2OtherName" type="text" value={broker2OtherName} onChange={(e) => setBroker2OtherName(e.target.value)} />
+              </div>
+            )}
+            <div className="field">
+              <label htmlFor="broker2Contact">Broker 2 contact</label>
+              <input id="broker2Contact" type="text" value={broker2Contact} onChange={(e) => setBroker2Contact(e.target.value)} />
             </div>
           </div>
         )}

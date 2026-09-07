@@ -4,9 +4,10 @@ export type PropertyType =
   | 'Apartment/Condo'
   | 'Agricultural'
   | 'A&D'
+  | 'Ready for Titling'
   | 'Other'
 
-export type StructureType = 'Condo' | 'Apartment' | 'House' | 'Hotel' | 'Resort' | 'Other'
+export type StructureType = 'Condo' | 'Apartment' | 'House' | 'Hotel' | 'Resort' | 'Farm' | 'Other'
 
 export type ListingStatus = 'Active' | 'Sold' | 'On Hold' | 'Withdrawn'
 
@@ -45,7 +46,7 @@ export interface Property {
   type: PropertyType | null
   title_status: string | null
   has_structure: boolean
-  structure_type: StructureType | null
+  structure_types: StructureType[]
   structure_size_sqm: number | null
   lot_size_sqm: number | null
   special_selling_point: string | null
@@ -63,6 +64,10 @@ export interface Property {
   broker: Broker | null
   broker_other_name: string | null
   broker_contact: string | null
+  // Second broker, when the deal involves two (e.g. a buyer-side and a seller-side broker).
+  broker2: Broker | null
+  broker2_other_name: string | null
+  broker2_contact: string | null
   photos: string[]
   videos: string[]
   map_url: string | null

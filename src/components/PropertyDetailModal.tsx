@@ -173,7 +173,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
 
           {property.has_structure && (
             <p style={{ fontSize: '0.9rem' }}>
-              <strong>Structure:</strong> {property.structure_type ?? '-'}
+              <strong>Structure:</strong> {property.structure_types?.length > 0 ? property.structure_types.join(', ') : '-'}
               {property.structure_size_sqm ? ` - ${formatNumber(property.structure_size_sqm)} sqm` : ''}
             </p>
           )}
@@ -213,6 +213,12 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
               <span>
                 <strong>Broker:</strong> {property.broker === 'Other' ? property.broker_other_name || 'Other' : property.broker}
                 {property.broker_contact ? ` (${property.broker_contact})` : ''}
+              </span>
+            )}
+            {property.broker2 && (
+              <span>
+                <strong>Broker 2:</strong> {property.broker2 === 'Other' ? property.broker2_other_name || 'Other' : property.broker2}
+                {property.broker2_contact ? ` (${property.broker2_contact})` : ''}
               </span>
             )}
             {property.listing_status === 'Sold' && closingAgent && (

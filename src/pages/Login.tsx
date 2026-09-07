@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +14,17 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('pathway-session-expired')) {
+        sessionStorage.removeItem('pathway-session-expired')
+        setInfo('You were signed out because your session expired. Please sign in again.')
+      }
+    } catch {
+      // ignore - sessionStorage may be unavailable
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

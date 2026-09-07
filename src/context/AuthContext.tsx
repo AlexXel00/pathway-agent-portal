@@ -47,7 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => sub.subscription.unsubscribe()
+    // A tab left in the background for a while gets its timers throttled by the
+    // browser, so the automatic pre-expiry token refresh can fire too late. Re-check
+    // the session as soon as the tab becomes visible again so it gets refreshed before
+    // the user starts clicking around on an already-expired session.
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      sub.subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [])
 
   async function signOut() {

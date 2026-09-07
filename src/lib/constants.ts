@@ -9,4 +9,9 @@ export const COMMON_TAGS: string[] = [
   'Ready to Build',
   'Near Town Center',
   'Rice Field View',
+  'Fruit Trees',
+  'Ready to Operate',
+  'Near Airport',
+  'Near to Beach',
+  'Boat Dock',
 ]
