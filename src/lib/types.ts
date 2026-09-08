@@ -96,6 +96,9 @@ export interface Property {
   photos: string[]
   videos: string[]
   map_url: string | null
+  // Optional coordinates for the embedded map view on the listing detail page.
+  latitude: number | null
+  longitude: number | null
   raw_media_url: string | null
   edited_media_url: string | null
   listing_status: ListingStatus

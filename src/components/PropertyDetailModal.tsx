@@ -269,6 +269,17 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
             )}
           </div>
 
+          {property.latitude != null && property.longitude != null && (
+            <iframe
+              title="Property location"
+              src={`https://www.google.com/maps?q=${property.latitude},${property.longitude}&z=15&output=embed`}
+              width="100%"
+              height="280"
+              style={{ border: 0, borderRadius: 12, marginBottom: 14 }}
+              loading="lazy"
+            />
+          )}
+
           <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />
 
           <h3 style={{ fontSize: '1rem' }}>My activity on this listing</h3>

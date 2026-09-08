@@ -62,6 +62,8 @@ export default function AdminNewListing() {
   const [broker2OtherName, setBroker2OtherName] = useState('')
   const [broker2Contact, setBroker2Contact] = useState('')
   const [mapUrl, setMapUrl] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   const [videoUrls, setVideoUrls] = useState('')
   const [rawMediaUrl, setRawMediaUrl] = useState('')
   const [editedMediaUrl, setEditedMediaUrl] = useState('')
@@ -122,6 +124,8 @@ export default function AdminNewListing() {
       setBroker2OtherName(data.broker2_other_name ?? '')
       setBroker2Contact(data.broker2_contact ?? '')
       setMapUrl(data.map_url ?? '')
+      setLatitude(data.latitude != null ? String(data.latitude) : '')
+      setLongitude(data.longitude != null ? String(data.longitude) : '')
       setVideoUrls((data.videos ?? []).join('\n'))
       setRawMediaUrl(data.raw_media_url ?? '')
       setEditedMediaUrl(data.edited_media_url ?? '')
@@ -238,6 +242,8 @@ export default function AdminNewListing() {
         .map((v) => v.trim())
         .filter(Boolean),
       map_url: mapUrl || null,
+      latitude: latitude ? Number(latitude) : null,
+      longitude: longitude ? Number(longitude) : null,
       raw_media_url: rawMediaUrl || null,
       edited_media_url: editedMediaUrl || null,
       listing_status: isEdit ? listingStatus : ('Active' as ListingStatus),
@@ -619,6 +625,34 @@ export default function AdminNewListing() {
           <label htmlFor="map">Map link</label>
           <input id="map" type="url" placeholder="https://maps.google.com/..." value={mapUrl} onChange={(e) => setMapUrl(e.target.value)} />
         </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="field">
+            <label htmlFor="latitude">Latitude (optional, shows an embedded map)</label>
+            <input
+              id="latitude"
+              type="number"
+              step="any"
+              placeholder="e.g. 10.1994"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="longitude">Longitude (optional)</label>
+            <input
+              id="longitude"
+              type="number"
+              step="any"
+              placeholder="e.g. 118.7961"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+            />
+          </div>
+        </div>
+        <p style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', marginTop: -14, marginBottom: 20 }}>
+          Tip: in Google Maps, right-click the exact spot and click the coordinates to copy them.
+        </p>
 
         <div className="field">
           <label htmlFor="videos">Video links (one per line)</label>
