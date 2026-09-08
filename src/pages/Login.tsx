@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const LOGO_URL = `${import.meta.env.BASE_URL}pathway-logo.png`
+const LOGO_URL = `${import.meta.env.BASE_URL}pathway-icon.png`
 
 export default function Login() {
   const { session, loading } = useAuth()
@@ -78,7 +78,7 @@ export default function Login() {
         <img
           src={LOGO_URL}
           alt="Pathway Real Estate"
-          style={{ width: 150, height: 150, objectFit: 'contain', margin: '0 auto 18px' }}
+          style={{ height: 150, width: 'auto', objectFit: 'contain', margin: '0 auto 18px' }}
           onError={(e) => {
             ;(e.target as HTMLImageElement).style.display = 'none'
           }}

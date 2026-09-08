@@ -2,7 +2,10 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ChatProvider, useChat } from '../context/ChatContext'
 
-const LOGO_URL = `${import.meta.env.BASE_URL}pathway-logo.png`
+// Tightly cropped icon-only mark (no wordmark, no padding) - the header already shows the
+// "Pathway" text next to it, so the full logo file (which has a lot of transparent margin
+// plus its own "Pathway Real Estate" wordmark baked in) looked tiny and redundant here.
+const LOGO_URL = `${import.meta.env.BASE_URL}pathway-icon.png`
 
 const navLinkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties => ({
   padding: '8px 14px',
@@ -67,19 +70,19 @@ export default function Layout() {
               gap: 24,
               padding: '20px 24px',
               flexWrap: 'wrap',
-              minHeight: 96,
+              minHeight: 118,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginRight: 8 }}>
               <img
                 src={LOGO_URL}
                 alt="Pathway"
-                style={{ width: 96, height: 96, objectFit: 'contain' }}
+                style={{ height: 78, width: 'auto', objectFit: 'contain' }}
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).style.display = 'none'
                 }}
               />
-              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '1.3rem' }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '1.5rem' }}>
                 Pathway
               </span>
             </div>
