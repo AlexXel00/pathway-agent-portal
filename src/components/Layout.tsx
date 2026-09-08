@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ChatProvider, useChat } from '../context/ChatContext'
+import LoginDigestModal from './LoginDigestModal'
 
 // Tightly cropped icon-only mark (no wordmark, no padding) - the header already shows the
 // "Pathway" text next to it, so the full logo file (which has a lot of transparent margin
@@ -52,6 +53,7 @@ export default function Layout() {
 
   return (
     <ChatProvider>
+      <LoginDigestModal />
       <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
         <header
           style={{

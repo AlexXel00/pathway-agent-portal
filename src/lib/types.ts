@@ -145,6 +145,16 @@ export interface ChatMessage {
   created_at: string
 }
 
+// Returned by the get_login_digest() RPC, called once per genuine sign-in - summarizes
+// what changed since the agent's previous login so we can show a "welcome back" popup.
+export interface LoginDigest {
+  new_listings: number
+  sold_listings: number
+  missed_messages: number
+  // null on an agent's very first-ever login (nothing to compare against yet).
+  previous_login_at: string | null
+}
+
 export type CompanyCategory = 'Our Values' | 'Our Services' | 'FAQ' | 'Marketing Guide'
 
 export interface CompanyInfo {
