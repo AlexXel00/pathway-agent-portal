@@ -10,10 +10,9 @@ interface Props {
   property: Property
   agentsById: Record<string, Agent>
   onClose: () => void
-  onUpdated?: (updated: Property) => void
 }
 
-export default function PropertyDetailModal({ property, agentsById, onClose, onUpdated }: Props) {
+export default function PropertyDetailModal({ property, agentsById, onClose }: Props) {
   const { agent } = useAuth()
   const navigate = useNavigate()
   const [activity, setActivity] = useState<AgentActivity | null>(null)
@@ -25,13 +24,6 @@ export default function PropertyDetailModal({ property, agentsById, onClose, onU
   const [hasPotentialBuyer, setHasPotentialBuyer] = useState(false)
   const [wasShown, setWasShown] = useState(false)
   const [activeImg, setActiveImg] = useState(0)
-  const [markSoldOpen, setMarkSoldOpen] = useState(false)
-  const [soldClosingAgentId, setSoldClosingAgentId] = useState('')
-  const [soldClosingAgentOtherName, setSoldClosingAgentOtherName] = useState('')
-  const [soldCommission, setSoldCommission] = useState('')
-  const [soldDate, setSoldDate] = useState('')
-  const [markingSold, setMarkingSold] = useState(false)
-  const [markSoldError, setMarkSoldError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -94,28 +86,6 @@ export default function PropertyDetailModal({ property, agentsById, onClose, onU
     .filter((r) => r.has_potential_buyer)
     .map((r) => (agentsById[r.agent_id] ? getAgentInitials(agentsById[r.agent_id].name) : null))
     .filter((v): v is string => Boolean(v))
-
-  async function markSold(e: React.FormEvent) {
-    e.preventDefault()
-    setMarkSoldError(null)
-    setMarkingSold(true)
-    const { data, error } = await supabase.rpc('mark_listing_sold', {
-      p_property_id: property.id,
-      p_closing_agent_id: soldClosingAgentId && soldClosingAgentId !== 'other' ? soldClosingAgentId : null,
-      p_closing_agent_other_name: soldClosingAgentId === 'other' ? soldClosingAgentOtherName || null : null,
-      p_actual_commission_php: soldCommission ? Number(soldCommission) : null,
-      p_sale_date: soldDate || null,
-    })
-    setMarkingSold(false)
-    if (error) {
-      setMarkSoldError(error.message)
-      return
-    }
-    if (data) {
-      setMarkSoldOpen(false)
-      onUpdated?.(data as Property)
-    }
-  }
 
   const listingAgent = property.listing_agent_id ? agentsById[property.listing_agent_id] : null
   const listingAgentName = listingAgent?.name ?? property.listing_agent_other_name
@@ -186,11 +156,6 @@ export default function PropertyDetailModal({ property, agentsById, onClose, onU
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              {property.listing_status !== 'Sold' && (
-                <button className="btn btn-outline" onClick={() => setMarkSoldOpen((v) => !v)}>
-                  Mark as sold
-                </button>
-              )}
               {agent?.is_admin && (
                 <button className="btn btn-outline" onClick={() => navigate(`/admin/edit-listing/${property.id}`)}>
                   Edit listing
@@ -201,83 +166,6 @@ export default function PropertyDetailModal({ property, agentsById, onClose, onU
               </button>
             </div>
           </div>
-
-          {markSoldOpen && (
-            <form
-              onSubmit={markSold}
-              className="card"
-              style={{ padding: '16px 18px', margin: '16px 0', background: 'var(--color-ivory)' }}
-            >
-              <h3 style={{ fontSize: '0.95rem', marginBottom: 4 }}>Mark as sold</h3>
-              <p style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', marginBottom: 14 }}>
-                Anyone can record who closed a deal - it does not have to be the listing agent.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="field">
-                  <label htmlFor="soldClosingAgent">Closing agent</label>
-                  <select
-                    id="soldClosingAgent"
-                    value={soldClosingAgentId}
-                    onChange={(e) => setSoldClosingAgentId(e.target.value)}
-                  >
-                    <option value="">- None -</option>
-                    {Object.values(agentsById)
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    <option value="other">Other (not in-house)</option>
-                  </select>
-                </div>
-                {soldClosingAgentId === 'other' && (
-                  <div className="field">
-                    <label htmlFor="soldClosingAgentOtherName">Closing agent name</label>
-                    <input
-                      id="soldClosingAgentOtherName"
-                      type="text"
-                      value={soldClosingAgentOtherName}
-                      onChange={(e) => setSoldClosingAgentOtherName(e.target.value)}
-                    />
-                  </div>
-                )}
-                <div className="field">
-                  <label htmlFor="soldCommission">Actual commission (PHP)</label>
-                  <input
-                    id="soldCommission"
-                    type="number"
-                    min="0"
-                    value={soldCommission}
-                    onChange={(e) => setSoldCommission(e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="soldDate">Sale date</label>
-                  <input
-                    id="soldDate"
-                    type="date"
-                    value={soldDate}
-                    onChange={(e) => setSoldDate(e.target.value)}
-                  />
-                  <p style={{ color: 'var(--color-secondary)', fontSize: '0.76rem', marginTop: 4 }}>
-                    Leave empty to use today's date.
-                  </p>
-                </div>
-              </div>
-              {markSoldError && (
-                <p style={{ color: 'var(--color-danger)', fontSize: '0.85rem', marginTop: 6 }}>{markSoldError}</p>
-              )}
-              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                <button type="submit" className="btn btn-primary" disabled={markingSold}>
-                  {markingSold ? 'Saving...' : 'Confirm sold'}
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={() => setMarkSoldOpen(false)}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
 
           <div
             style={{

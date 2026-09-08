@@ -172,15 +172,7 @@ export default function Listings() {
       )}
 
       {selected && (
-        <PropertyDetailModal
-          property={selected}
-          agentsById={agentsById}
-          onClose={() => setSelected(null)}
-          onUpdated={(updated) => {
-            setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-            setSelected(updated)
-          }}
-        />
+        <PropertyDetailModal property={selected} agentsById={agentsById} onClose={() => setSelected(null)} />
       )}
     </div>
   )
