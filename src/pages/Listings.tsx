@@ -25,20 +25,20 @@ export default function Listings() {
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
 
+  async function loadProperties() {
+    // properties_for_agents masks the owner contact for non-admins at the database level -
+    // it always returns owner_contact_name as null unless the querying user is an admin.
+    const [{ data: props }, { data: ags }] = await Promise.all([
+      supabase.from('properties_for_agents').select('*').order('created_at', { ascending: false }),
+      supabase.from('agents').select('*'),
+    ])
+    setProperties(props ?? [])
+    setAgents(ags ?? [])
+  }
+
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      // properties_for_agents masks the owner contact for non-admins at the database level -
-      // it always returns owner_contact_name as null unless the querying user is an admin.
-      const [{ data: props }, { data: ags }] = await Promise.all([
-        supabase.from('properties_for_agents').select('*').order('created_at', { ascending: false }),
-        supabase.from('agents').select('*'),
-      ])
-      setProperties(props ?? [])
-      setAgents(ags ?? [])
-      setLoading(false)
-    }
-    load()
+    setLoading(true)
+    loadProperties().finally(() => setLoading(false))
   }, [])
 
   const agentsById = useMemo(() => {
@@ -172,7 +172,15 @@ export default function Listings() {
       )}
 
       {selected && (
-        <PropertyDetailModal property={selected} agentsById={agentsById} onClose={() => setSelected(null)} />
+        <PropertyDetailModal
+          property={selected}
+          agentsById={agentsById}
+          onClose={() => setSelected(null)}
+          onUpdated={(updated) => {
+            setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+            setSelected(updated)
+          }}
+        />
       )}
     </div>
   )
