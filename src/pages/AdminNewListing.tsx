@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, MEDIA_BUCKET } from '../lib/supabase'
 import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '../lib/types'
 import { COMMON_TAGS, PALAWAN_MUNICIPALITIES } from '../lib/constants'
+import { useAuth } from '../context/AuthContext'
 
 const TYPES: PropertyType[] = [
   'Residential',
@@ -28,6 +29,8 @@ function slugify(input: string) {
 export default function AdminNewListing() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { agent } = useAuth()
+  const isHeadAdmin = agent?.is_head_admin ?? false
   const isEdit = Boolean(id)
   const [loadingExisting, setLoadingExisting] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -74,6 +77,8 @@ export default function AdminNewListing() {
   const [saleDate, setSaleDate] = useState('')
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const [websitePhotos, setWebsitePhotos] = useState<string[]>([])
+  const [uploadingWebsitePhotos, setUploadingWebsitePhotos] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
   // Tracks whether the commission field still holds our auto-computed suggestion (true) or
   // was overwritten by hand (false) - once edited manually we stop recalculating it.
@@ -130,6 +135,7 @@ export default function AdminNewListing() {
       setRawMediaUrl(data.raw_media_url ?? '')
       setEditedMediaUrl(data.edited_media_url ?? '')
       setPhotoUrls(data.photos ?? [])
+      setWebsitePhotos(data.website_photos ?? [])
       setListingStatus((data.listing_status as ListingStatus) ?? 'Active')
       setClosingAgentId(data.closing_agent_id ?? (data.closing_agent_other_name ? 'other' : ''))
       setClosingAgentOtherName(data.closing_agent_other_name ?? '')
@@ -205,6 +211,50 @@ export default function AdminNewListing() {
     setPhotoUrls((prev) => prev.filter((u) => u !== url))
   }
 
+  function toggleWebsitePhoto(url: string) {
+    setWebsitePhotos((prev) => (prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]))
+  }
+
+  function removeWebsitePhoto(url: string) {
+    setWebsitePhotos((prev) => prev.filter((u) => u !== url))
+  }
+
+  function moveWebsitePhoto(index: number, direction: -1 | 1) {
+    setWebsitePhotos((prev) => {
+      const target = index + direction
+      if (target < 0 || target >= prev.length) return prev
+      const next = [...prev]
+      const temp = next[index]
+      next[index] = next[target]
+      next[target] = temp
+      return next
+    })
+  }
+
+  async function handleWebsitePhotoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setUploadingWebsitePhotos(true)
+    setError(null)
+    const folder = slugify(name || internalCode || 'listing') || `listing-${Date.now()}`
+    const uploaded: string[] = []
+    for (const file of Array.from(files)) {
+      const path = `properties/${folder}/website/${Date.now()}-${slugify(file.name)}`
+      const { error: uploadError } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
+        contentType: file.type || 'image/jpeg',
+      })
+      if (uploadError) {
+        setError(`Website photo upload failed: ${uploadError.message}`)
+        continue
+      }
+      const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
+      uploaded.push(data.publicUrl)
+    }
+    setWebsitePhotos((prev) => [...prev, ...uploaded])
+    setUploadingWebsitePhotos(false)
+    e.target.value = ''
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -237,6 +287,7 @@ export default function AdminNewListing() {
       broker2_other_name: broker2 === 'Other' ? broker2OtherName || null : null,
       broker2_contact: broker2 ? broker2Contact || null : null,
       photos: photoUrls,
+      website_photos: websitePhotos,
       videos: videoUrls
         .split(/\n|,/)
         .map((v) => v.trim())
@@ -704,6 +755,136 @@ export default function AdminNewListing() {
             </div>
           )}
         </div>
+
+        {isHeadAdmin && (
+          <div className="field">
+            <label>Website-Fotos (nur Head-Admin)</label>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+              Waehle aus, welche Fotos auf der oeffentlichen Website erscheinen, und bringe sie in die gewuenschte
+              Reihenfolge. Solange hier nichts gewaehlt ist, zeigt die Website automatisch alle Fotos von oben.
+            </p>
+
+            {photoUrls.length > 0 && (
+              <>
+                <p style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: 6 }}>Aus vorhandenen Fotos waehlen</p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                  {photoUrls.map((url) => {
+                    const selected = websitePhotos.includes(url)
+                    return (
+                      <button
+                        key={url}
+                        type="button"
+                        onClick={() => toggleWebsitePhoto(url)}
+                        style={{
+                          position: 'relative',
+                          padding: 0,
+                          border: selected ? '3px solid var(--color-primary)' : '3px solid transparent',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          background: 'none',
+                          lineHeight: 0,
+                        }}
+                      >
+                        <img
+                          src={url}
+                          alt=""
+                          style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+                        />
+                        {selected && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              bottom: 4,
+                              right: 4,
+                              background: 'var(--color-primary)',
+                              color: '#fff',
+                              fontSize: '0.68rem',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                            }}
+                          >
+                            Website
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            <label htmlFor="websitePhotoUpload" style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+              Zusaetzliche Website-Fotos hochladen
+            </label>
+            <input
+              id="websitePhotoUpload"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleWebsitePhotoUpload}
+              disabled={uploadingWebsitePhotos}
+            />
+            {uploadingWebsitePhotos && (
+              <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>Uploading...</p>
+            )}
+
+            {websitePhotos.length > 0 && (
+              <>
+                <p style={{ fontSize: '0.82rem', fontWeight: 600, margin: '12px 0 6px' }}>
+                  Reihenfolge auf der Website ({websitePhotos.length})
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {websitePhotos.map((url, index) => (
+                    <div
+                      key={url}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: 6,
+                        border: '1px solid var(--color-beige)',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: '0.82rem', width: 20, textAlign: 'center', color: 'var(--color-secondary)' }}>
+                        {index + 1}
+                      </span>
+                      <img src={url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6 }} />
+                      <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => moveWebsitePhoto(index, -1)}
+                          disabled={index === 0}
+                          style={{ padding: '2px 8px' }}
+                        >
+                          Hoch
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => moveWebsitePhoto(index, 1)}
+                          disabled={index === websitePhotos.length - 1}
+                          style={{ padding: '2px 8px' }}
+                        >
+                          Runter
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => removeWebsitePhoto(url)}
+                          style={{ padding: '2px 8px' }}
+                        >
+                          Entfernen
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {error && <p style={{ color: 'var(--color-danger)', fontSize: '0.88rem' }}>{error}</p>}
         {success && (
