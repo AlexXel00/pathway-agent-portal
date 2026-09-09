@@ -94,6 +94,9 @@ export interface Property {
   broker2_other_name: string | null
   broker2_contact: string | null
   photos: string[]
+  // Curated photos shown on the public website, in display order.
+  // Empty means the website falls back to all photos above.
+  website_photos: string[]
   videos: string[]
   map_url: string | null
   // Optional coordinates for the embedded map view on the listing detail page.
