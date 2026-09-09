@@ -170,7 +170,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))',
               gap: 14,
               margin: '18px 0',
               padding: '16px',

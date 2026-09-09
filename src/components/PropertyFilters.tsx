@@ -54,7 +54,7 @@ export default function PropertyFilters({ filters, onChange, municipalities, act
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
           gap: 14,
           marginBottom: 14,
         }}

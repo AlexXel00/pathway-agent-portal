@@ -283,7 +283,7 @@ export default function AdminNewListing() {
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: '28px 30px' }}>
         {isEdit && (
-          <div style={{ display: 'grid', gridTemplateColumns: listingStatus === 'Sold' ? '1fr 1fr' : '1fr', gap: 16 }}>
+          <div className={listingStatus === 'Sold' ? 'form-grid-2' : undefined}>
             <div className="field">
               <label htmlFor="listingStatus">Listing status</label>
               <select id="listingStatus" value={listingStatus} onChange={(e) => setListingStatus(e.target.value as ListingStatus)}>
@@ -324,7 +324,7 @@ export default function AdminNewListing() {
         )}
 
         {isEdit && listingStatus === 'Sold' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="form-grid-2">
             <div className="field">
               <label htmlFor="actualCommission">Actual commission (PHP)</label>
               <input
@@ -347,7 +347,7 @@ export default function AdminNewListing() {
           <input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="code">Internal code</label>
             <input id="code" type="text" value={internalCode} onChange={(e) => setInternalCode(e.target.value)} />
@@ -364,7 +364,7 @@ export default function AdminNewListing() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="municipality">Municipality</label>
             <select id="municipality" value={municipality} onChange={(e) => setMunicipality(e.target.value)}>
@@ -502,7 +502,7 @@ export default function AdminNewListing() {
           <textarea id="description" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="price">Price total (PHP)</label>
             <input id="price" type="number" min="0" value={priceTotal} onChange={(e) => setPriceTotal(e.target.value)} />
@@ -526,7 +526,7 @@ export default function AdminNewListing() {
           between both brokers when two are set) - edit it directly if this deal is different.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="listingAgent">Listing agent</label>
             <select id="listingAgent" value={listingAgentId} onChange={(e) => setListingAgentId(e.target.value)}>
@@ -580,7 +580,7 @@ export default function AdminNewListing() {
         </div>
 
         {broker && (
-          <div style={{ display: 'grid', gridTemplateColumns: broker === 'Other' ? '1fr 1fr' : '1fr', gap: 16 }}>
+          <div className={broker === 'Other' ? 'form-grid-2' : undefined}>
             {broker === 'Other' && (
               <div className="field">
                 <label htmlFor="brokerOtherName">Broker name</label>
@@ -607,7 +607,7 @@ export default function AdminNewListing() {
         </div>
 
         {broker2 && (
-          <div style={{ display: 'grid', gridTemplateColumns: broker2 === 'Other' ? '1fr 1fr' : '1fr', gap: 16 }}>
+          <div className={broker2 === 'Other' ? 'form-grid-2' : undefined}>
             {broker2 === 'Other' && (
               <div className="field">
                 <label htmlFor="broker2OtherName">Broker 2 name</label>
@@ -626,7 +626,7 @@ export default function AdminNewListing() {
           <input id="map" type="url" placeholder="https://maps.google.com/..." value={mapUrl} onChange={(e) => setMapUrl(e.target.value)} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="latitude">Latitude (optional, shows an embedded map)</label>
             <input
@@ -659,7 +659,7 @@ export default function AdminNewListing() {
           <textarea id="videos" rows={2} value={videoUrls} onChange={(e) => setVideoUrls(e.target.value)} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-grid-2">
           <div className="field">
             <label htmlFor="rawMedia">Raw media link</label>
             <input

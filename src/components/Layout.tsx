@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ChatProvider, useChat } from '../context/ChatContext'
 import LoginDigestModal from './LoginDigestModal'
@@ -50,6 +51,13 @@ function ChatNavLink() {
 
 export default function Layout() {
   const { agent, signOut } = useAuth()
+  const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close the mobile nav dropdown automatically whenever the user navigates somewhere.
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
   return (
     <ChatProvider>
@@ -64,17 +72,7 @@ export default function Layout() {
             zIndex: 20,
           }}
         >
-          <div
-            className="container"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 24,
-              padding: '20px 24px',
-              flexWrap: 'wrap',
-              minHeight: 118,
-            }}
-          >
+          <div className="container app-header-inner">
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginRight: 8 }}>
               <img
                 src={LOGO_URL}
@@ -89,7 +87,18 @@ export default function Layout() {
               </span>
             </div>
 
-            <nav style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+            <button
+              type="button"
+              className="mobile-menu-toggle"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              style={{ marginLeft: 'auto', order: 2 }}
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
+
+            <nav className={`app-nav${menuOpen ? ' open' : ''}`}>
               <NavLink to="/overview" style={navLinkStyle}>
                 Overview
               </NavLink>
@@ -123,8 +132,8 @@ export default function Layout() {
               )}
             </nav>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, order: 2 }}>
+              <span className="app-user-name" style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
                 {agent?.name ?? '...'}
                 {agent?.is_admin ? ' (Admin)' : ''}
               </span>

@@ -82,7 +82,7 @@ export default function MarketingMaterialPage() {
       ) : items.length === 0 ? (
         <p style={{ color: 'var(--color-secondary)' }}>No marketing material has been added yet.</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: 20 }}>
           {items.map((item) => (
             <div key={item.id} className="card" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h3 style={{ fontSize: '1rem', marginBottom: 0 }}>{item.title}</h3>

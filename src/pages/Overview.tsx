@@ -53,7 +53,7 @@ export default function Overview() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))',
           gap: 16,
           marginBottom: 36,
         }}
@@ -63,7 +63,7 @@ export default function Overview() {
         <StatCard label="Closed sales" value={String(sold.length)} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))', gap: 24 }}>
         <section className="card" style={{ padding: '22px 26px' }}>
           <h3>Active listings by location</h3>
           <PieChart data={byLocation} />

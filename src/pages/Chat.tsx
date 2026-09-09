@@ -121,7 +121,7 @@ export default function Chat() {
       </p>
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="chat-sidebar" style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ padding: '16px 18px' }}>
             <h3 style={{ fontSize: '0.9rem', marginBottom: 4 }}>Conversations</h3>
             <p style={{ color: 'var(--color-secondary)', fontSize: '0.76rem', marginBottom: 10 }}>
