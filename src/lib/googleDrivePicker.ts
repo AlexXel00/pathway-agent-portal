@@ -86,7 +86,9 @@ function openPicker(token: string): Promise<PickedDoc[]> {
       return
     }
     const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+    view.setIncludeFolders(true)
     view.setSelectFolderEnabled(false)
+    view.setEnableDrives(true)
 
     const picker = new google.picker.PickerBuilder()
       .setAppId(APP_ID)
@@ -94,6 +96,7 @@ function openPicker(token: string): Promise<PickedDoc[]> {
       .setDeveloperKey(API_KEY)
       .addView(view)
       .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+      .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
       .setCallback((data: any) => {
         const action = data[google.picker.Response.ACTION]
         if (action === google.picker.Action.PICKED) {
