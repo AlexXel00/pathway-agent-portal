@@ -37,6 +37,7 @@ export default function AdminNewListing() {
   const [saving, setSaving] = useState(false)
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [pickingDrive, setPickingDrive] = useState(false)
+  const [pickingWebsiteDrive, setPickingWebsiteDrive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -285,6 +286,36 @@ export default function AdminNewListing() {
     setWebsitePhotos((prev) => [...prev, ...uploaded])
     setUploadingWebsitePhotos(false)
     e.target.value = ''
+  }
+
+  async function handleWebsiteDrivePick() {
+    setError(null)
+    setPickingWebsiteDrive(true)
+    try {
+      const files = await pickImagesFromGoogleDrive()
+      if (files.length === 0) return
+      setUploadingWebsitePhotos(true)
+      const folder = slugify(name || internalCode || 'listing') || `listing-${Date.now()}`
+      const uploaded: string[] = []
+      for (const file of files) {
+        const path = `properties/${folder}/website/${Date.now()}-${slugify(file.name)}`
+        const { error: uploadError } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
+          contentType: file.type || 'image/jpeg',
+        })
+        if (uploadError) {
+          setError(`Website photo upload failed: ${uploadError.message}`)
+          continue
+        }
+        const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
+        uploaded.push(data.publicUrl)
+      }
+      setWebsitePhotos((prev) => [...prev, ...uploaded])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google Drive selection failed.')
+    } finally {
+      setUploadingWebsitePhotos(false)
+      setPickingWebsiteDrive(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -865,6 +896,15 @@ export default function AdminNewListing() {
               onChange={handleWebsitePhotoUpload}
               disabled={uploadingWebsitePhotos}
             />
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleWebsiteDrivePick}
+              disabled={pickingWebsiteDrive || uploadingWebsitePhotos}
+              style={{ marginTop: 8 }}
+            >
+              {pickingWebsiteDrive ? 'Google Drive...' : 'Aus Google Drive waehlen'}
+            </button>
             {uploadingWebsitePhotos && (
               <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>Uploading...</p>
             )}
