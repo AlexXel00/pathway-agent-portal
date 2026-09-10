@@ -4,6 +4,7 @@ import { supabase, MEDIA_BUCKET } from '../lib/supabase'
 import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '../lib/types'
 import { COMMON_TAGS, PALAWAN_MUNICIPALITIES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
+import { pickImagesFromGoogleDrive } from '../lib/googleDrivePicker'
 
 const TYPES: PropertyType[] = [
   'Residential',
@@ -35,6 +36,7 @@ export default function AdminNewListing() {
   const [loadingExisting, setLoadingExisting] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [pickingDrive, setPickingDrive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -209,6 +211,36 @@ export default function AdminNewListing() {
 
   function removePhoto(url: string) {
     setPhotoUrls((prev) => prev.filter((u) => u !== url))
+  }
+
+  async function handleGoogleDrivePick() {
+    setError(null)
+    setPickingDrive(true)
+    try {
+      const files = await pickImagesFromGoogleDrive()
+      if (files.length === 0) return
+      setUploadingPhotos(true)
+      const folder = slugify(name || internalCode || 'listing') || `listing-${Date.now()}`
+      const uploaded: string[] = []
+      for (const file of files) {
+        const path = `properties/${folder}/${Date.now()}-${slugify(file.name)}`
+        const { error: uploadError } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
+          contentType: file.type || 'image/jpeg',
+        })
+        if (uploadError) {
+          setError(`Photo upload failed: ${uploadError.message}`)
+          continue
+        }
+        const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
+        uploaded.push(data.publicUrl)
+      }
+      setPhotoUrls((prev) => [...prev, ...uploaded])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google Drive selection failed.')
+    } finally {
+      setUploadingPhotos(false)
+      setPickingDrive(false)
+    }
   }
 
   function toggleWebsitePhoto(url: string) {
@@ -736,6 +768,15 @@ export default function AdminNewListing() {
         <div className="field">
           <label htmlFor="photos">Photos</label>
           <input id="photos" type="file" accept="image/*" multiple onChange={handlePhotoSelect} disabled={uploadingPhotos} />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleGoogleDrivePick}
+            disabled={pickingDrive || uploadingPhotos}
+            style={{ marginTop: 8 }}
+          >
+            {pickingDrive ? 'Google Drive...' : 'Aus Google Drive waehlen'}
+          </button>
           {uploadingPhotos && <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>Uploading...</p>}
           {photoUrls.length > 0 && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
