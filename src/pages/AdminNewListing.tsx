@@ -16,6 +16,35 @@ const TYPES: PropertyType[] = [
   'Other',
 ]
 const STRUCTURE_TYPES: StructureType[] = ['Condo', 'Apartment', 'House', 'Hotel', 'Resort', 'Farm', 'Other']
+
+const CATEGORY_OPTIONS = [
+  'Land / Lot',
+  'House',
+  'Villa',
+  'Condominium',
+  'Apartment building',
+  'Hotel',
+  'Resort',
+  'Commercial building',
+  'Farm',
+  'Other',
+]
+
+const ELECTRICITY_OPTIONS = [
+  'Grid connection',
+  'Solar / PV',
+  'Grid + Solar',
+  'Generator',
+  'Connection possible',
+  'No connection',
+]
+
+const WATER_OPTIONS = [
+  'Water connection',
+  'Own source (well/spring)',
+  'Connection possible',
+  'No connection',
+]
 const BROKERS: Broker[] = ['Jason', 'Catherine', 'Other']
 const STATUSES: ListingStatus[] = ['Active', 'Sold', 'On Hold', 'Withdrawn']
 
@@ -46,10 +75,15 @@ export default function AdminNewListing() {
   const [municipality, setMunicipality] = useState('')
   const [barangay, setBarangay] = useState('')
   const [type, setType] = useState<PropertyType>('Residential')
+  const [category, setCategory] = useState('')
   const [titleStatus, setTitleStatus] = useState('')
+  const [electricity, setElectricity] = useState('')
+  const [water, setWater] = useState('')
   const [hasStructure, setHasStructure] = useState(false)
   const [structureTypes, setStructureTypes] = useState<StructureType[]>([])
   const [structureSize, setStructureSize] = useState('')
+  const [buildAreaMode, setBuildAreaMode] = useState<'sqm' | 'text'>('sqm')
+  const [buildAreaText, setBuildAreaText] = useState('')
   const [lotSize, setLotSize] = useState('')
   const [sellingPoint, setSellingPoint] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -111,10 +145,15 @@ export default function AdminNewListing() {
       setMunicipality(data.municipality ?? '')
       setBarangay(data.barangay ?? '')
       setType((data.type as PropertyType) ?? 'Residential')
+      setCategory(data.category ?? '')
       setTitleStatus(data.title_status ?? '')
+      setElectricity(data.electricity ?? '')
+      setWater(data.water ?? '')
       setHasStructure(data.has_structure ?? false)
       setStructureTypes((data.structure_types as StructureType[]) ?? [])
       setStructureSize(data.structure_size_sqm != null ? String(data.structure_size_sqm) : '')
+      setBuildAreaText(data.build_area_text ?? '')
+      setBuildAreaMode(data.build_area_text ? 'text' : 'sqm')
       setLotSize(data.lot_size_sqm != null ? String(data.lot_size_sqm) : '')
       setSellingPoint(data.special_selling_point ?? '')
       setTags(data.tags ?? [])
@@ -329,10 +368,15 @@ export default function AdminNewListing() {
       municipality: municipality || null,
       barangay: barangay || null,
       type,
+      category: category || null,
       title_status: titleStatus || null,
+      electricity: electricity || null,
+      water: water || null,
       has_structure: hasStructure,
       structure_types: hasStructure ? structureTypes : [],
-      structure_size_sqm: hasStructure && structureSize ? Number(structureSize) : null,
+      structure_size_sqm:
+        hasStructure && buildAreaMode === 'sqm' && structureSize ? Number(structureSize) : null,
+      build_area_text: hasStructure && buildAreaMode === 'text' && buildAreaText ? buildAreaText : null,
       lot_size_sqm: lotSize ? Number(lotSize) : null,
       special_selling_point: sellingPoint || null,
       tags,
@@ -497,6 +541,18 @@ export default function AdminNewListing() {
         </div>
 
         <div className="field">
+          <label htmlFor="category">Category (shown on website)</label>
+          <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">- Select -</option>
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
           <label htmlFor="titleStatus">Title status</label>
           <select id="titleStatus" value={titleStatus} onChange={(e) => setTitleStatus(e.target.value)}>
             <option value="">- Select -</option>
@@ -540,8 +596,50 @@ export default function AdminNewListing() {
               </div>
             </div>
             <div className="field">
-              <label htmlFor="structureSize">Structure size (sqm)</label>
-              <input id="structureSize" type="number" min="0" value={structureSize} onChange={(e) => setStructureSize(e.target.value)} />
+              <label htmlFor="structureSize">Built area</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setBuildAreaMode('sqm')}
+                  style={{
+                    padding: '2px 12px',
+                    background: buildAreaMode === 'sqm' ? 'var(--color-primary)' : 'var(--color-beige)',
+                    color: buildAreaMode === 'sqm' ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                  }}
+                >
+                  Size (sqm)
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setBuildAreaMode('text')}
+                  style={{
+                    padding: '2px 12px',
+                    background: buildAreaMode === 'text' ? 'var(--color-primary)' : 'var(--color-beige)',
+                    color: buildAreaMode === 'text' ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                  }}
+                >
+                  Text
+                </button>
+              </div>
+              {buildAreaMode === 'sqm' ? (
+                <input
+                  id="structureSize"
+                  type="number"
+                  min="0"
+                  value={structureSize}
+                  onChange={(e) => setStructureSize(e.target.value)}
+                />
+              ) : (
+                <input
+                  id="buildAreaText"
+                  type="text"
+                  placeholder="e.g. 7 villas"
+                  value={buildAreaText}
+                  onChange={(e) => setBuildAreaText(e.target.value)}
+                />
+              )}
             </div>
           </>
         )}
@@ -549,6 +647,31 @@ export default function AdminNewListing() {
         <div className="field">
           <label htmlFor="lotSize">Lot size (sqm)</label>
           <input id="lotSize" type="number" min="0" value={lotSize} onChange={(e) => setLotSize(e.target.value)} />
+        </div>
+
+        <div className="form-grid-2">
+          <div className="field">
+            <label htmlFor="electricity">Electricity</label>
+            <select id="electricity" value={electricity} onChange={(e) => setElectricity(e.target.value)}>
+              <option value="">- Select -</option>
+              {ELECTRICITY_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="water">Water</label>
+            <select id="water" value={water} onChange={(e) => setWater(e.target.value)}>
+              <option value="">- Select -</option>
+              {WATER_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="field">
