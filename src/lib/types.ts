@@ -69,10 +69,14 @@ export interface Property {
   municipality: string | null
   barangay: string | null
   type: PropertyType | null
+  category: string | null
   title_status: string | null
+  electricity: string | null
+  water: string | null
   has_structure: boolean
   structure_types: StructureType[]
   structure_size_sqm: number | null
+  build_area_text: string | null
   lot_size_sqm: number | null
   special_selling_point: string | null
   tags: string[]
