@@ -85,10 +85,10 @@ function openPicker(token: string): Promise<PickedDoc[]> {
       reject(new Error('Picker not available'))
       return
     }
-    const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
     view.setIncludeFolders(true)
     view.setSelectFolderEnabled(false)
-    view.setEnableDrives(true)
+    view.setMimeTypes('image/png,image/jpeg,image/jpg,image/gif,image/webp,image/heic,image/heif')
 
     const picker = new google.picker.PickerBuilder()
       .setAppId(APP_ID)
@@ -96,7 +96,6 @@ function openPicker(token: string): Promise<PickedDoc[]> {
       .setDeveloperKey(API_KEY)
       .addView(view)
       .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-      .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
       .setCallback((data: any) => {
         const action = data[google.picker.Response.ACTION]
         if (action === google.picker.Action.PICKED) {
