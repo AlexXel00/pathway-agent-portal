@@ -19,6 +19,7 @@ export default function Listings() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<ListingStatus | 'All'>('Active')
+  const [kind, setKind] = useState<'property' | 'condo'>('property')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Property | null>(null)
   const [view, setView] = useState<'cards' | 'table'>('cards')
@@ -56,7 +57,9 @@ export default function Listings() {
   }, [properties])
 
   const filtered = useMemo(() => {
-    let result = properties.filter((p) => (tab === 'All' ? true : p.listing_status === tab))
+    let result = properties.filter(
+      (p) => ((p.listing_kind ?? 'property') === kind) && (tab === 'All' ? true : p.listing_status === tab)
+    )
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(
@@ -68,7 +71,7 @@ export default function Listings() {
       )
     }
     return applyFilters(result, filters)
-  }, [properties, tab, search, filters])
+  }, [properties, tab, kind, search, filters])
 
   const activeFilterCount = countActiveFilters(filters)
 
@@ -91,6 +94,25 @@ export default function Listings() {
             minWidth: 220,
           }}
         />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        {([
+          { label: 'Properties / Buildings', value: 'property' },
+          { label: 'Condos', value: 'condo' },
+        ] as const).map((k) => (
+          <button
+            key={k.value}
+            onClick={() => setKind(k.value)}
+            className="btn"
+            style={{
+              background: kind === k.value ? 'var(--color-primary)' : 'var(--color-beige)',
+              color: kind === k.value ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+            }}
+          >
+            {k.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
