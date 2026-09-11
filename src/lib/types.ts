@@ -77,6 +77,13 @@ export interface Property {
   structure_types: StructureType[]
   structure_size_sqm: number | null
   build_area_text: string | null
+  listing_kind: string
+  condo_floor_area_sqm: number | null
+  floor_level: string | null
+  bedrooms: string | null
+  bathrooms: number | null
+  amenities: string[]
+  completion_status: string | null
   lot_size_sqm: number | null
   special_selling_point: string | null
   tags: string[]
