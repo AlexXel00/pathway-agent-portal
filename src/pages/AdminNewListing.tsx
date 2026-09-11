@@ -45,6 +45,16 @@ const WATER_OPTIONS = [
   'Connection possible',
   'No connection',
 ]
+
+const BEDROOM_OPTIONS = ['Studio', '1', '2', '3', '4', '5+']
+
+const COMPLETION_OPTIONS = ['Ready for occupancy (RFO)', 'Under construction', 'Pre-selling']
+
+const AMENITIES = [
+  'Swimming pool', 'Gym', 'Parking', '24/7 Security', 'Elevator', 'Balcony',
+  'Backup generator', 'Function room', 'Playground', 'Garden', 'CCTV',
+  'Lobby/Reception', 'Laundry', 'Wi-Fi', 'Pet-friendly', 'Day care', 'Sauna', 'Jacuzzi',
+]
 const BROKERS: Broker[] = ['Jason', 'Catherine', 'Other']
 const STATUSES: ListingStatus[] = ['Active', 'Sold', 'On Hold', 'Withdrawn']
 
@@ -79,6 +89,13 @@ export default function AdminNewListing() {
   const [titleStatus, setTitleStatus] = useState('')
   const [electricity, setElectricity] = useState('')
   const [water, setWater] = useState('')
+  const [listingKind, setListingKind] = useState<'property' | 'condo'>('property')
+  const [condoFloorArea, setCondoFloorArea] = useState('')
+  const [floorLevel, setFloorLevel] = useState('')
+  const [bedrooms, setBedrooms] = useState('')
+  const [bathrooms, setBathrooms] = useState('')
+  const [amenities, setAmenities] = useState<string[]>([])
+  const [completionStatus, setCompletionStatus] = useState('')
   const [hasStructure, setHasStructure] = useState(false)
   const [structureTypes, setStructureTypes] = useState<StructureType[]>([])
   const [structureSize, setStructureSize] = useState('')
@@ -149,6 +166,13 @@ export default function AdminNewListing() {
       setTitleStatus(data.title_status ?? '')
       setElectricity(data.electricity ?? '')
       setWater(data.water ?? '')
+      setListingKind((data.listing_kind as 'property' | 'condo') ?? 'property')
+      setCondoFloorArea(data.condo_floor_area_sqm != null ? String(data.condo_floor_area_sqm) : '')
+      setFloorLevel(data.floor_level ?? '')
+      setBedrooms(data.bedrooms ?? '')
+      setBathrooms(data.bathrooms != null ? String(data.bathrooms) : '')
+      setAmenities(data.amenities ?? [])
+      setCompletionStatus(data.completion_status ?? '')
       setHasStructure(data.has_structure ?? false)
       setStructureTypes((data.structure_types as StructureType[]) ?? [])
       setStructureSize(data.structure_size_sqm != null ? String(data.structure_size_sqm) : '')
@@ -368,16 +392,24 @@ export default function AdminNewListing() {
       municipality: municipality || null,
       barangay: barangay || null,
       type,
-      category: category || null,
+      category: listingKind === 'property' ? (category || null) : null,
       title_status: titleStatus || null,
-      electricity: electricity || null,
-      water: water || null,
-      has_structure: hasStructure,
-      structure_types: hasStructure ? structureTypes : [],
+      electricity: listingKind === 'property' ? (electricity || null) : null,
+      water: listingKind === 'property' ? (water || null) : null,
+      has_structure: listingKind === 'property' ? hasStructure : false,
+      structure_types: listingKind === 'property' && hasStructure ? structureTypes : [],
       structure_size_sqm:
-        hasStructure && buildAreaMode === 'sqm' && structureSize ? Number(structureSize) : null,
-      build_area_text: hasStructure && buildAreaMode === 'text' && buildAreaText ? buildAreaText : null,
-      lot_size_sqm: lotSize ? Number(lotSize) : null,
+        listingKind === 'property' && hasStructure && buildAreaMode === 'sqm' && structureSize ? Number(structureSize) : null,
+      build_area_text:
+        listingKind === 'property' && hasStructure && buildAreaMode === 'text' && buildAreaText ? buildAreaText : null,
+      lot_size_sqm: listingKind === 'property' && lotSize ? Number(lotSize) : null,
+      listing_kind: listingKind,
+      condo_floor_area_sqm: listingKind === 'condo' && condoFloorArea ? Number(condoFloorArea) : null,
+      floor_level: listingKind === 'condo' ? (floorLevel || null) : null,
+      bedrooms: listingKind === 'condo' ? (bedrooms || null) : null,
+      bathrooms: listingKind === 'condo' && bathrooms ? Number(bathrooms) : null,
+      amenities: listingKind === 'condo' ? amenities : [],
+      completion_status: listingKind === 'condo' ? (completionStatus || null) : null,
       special_selling_point: sellingPoint || null,
       tags,
       description: description || null,
@@ -440,6 +472,34 @@ export default function AdminNewListing() {
       </p>
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: '28px 30px' }}>
+        <div className="field">
+          <label>Listing kind</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setListingKind('property')}
+              style={{
+                background: listingKind === 'property' ? 'var(--color-primary)' : 'var(--color-beige)',
+                color: listingKind === 'property' ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+              }}
+            >
+              Property / Building
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setListingKind('condo')}
+              style={{
+                background: listingKind === 'condo' ? 'var(--color-primary)' : 'var(--color-beige)',
+                color: listingKind === 'condo' ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+              }}
+            >
+              Condo
+            </button>
+          </div>
+        </div>
+
         {isEdit && (
           <div className={listingStatus === 'Sold' ? 'form-grid-2' : undefined}>
             <div className="field">
@@ -540,17 +600,19 @@ export default function AdminNewListing() {
           </div>
         </div>
 
-        <div className="field">
-          <label htmlFor="category">Category (shown on website)</label>
-          <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">- Select -</option>
-            {CATEGORY_OPTIONS.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
+        {listingKind === 'property' && (
+          <div className="field">
+            <label htmlFor="category">Category (shown on website)</label>
+            <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">- Select -</option>
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor="titleStatus">Title status</label>
@@ -564,6 +626,72 @@ export default function AdminNewListing() {
           </select>
         </div>
 
+        {listingKind === 'condo' && (
+          <>
+            <div className="form-grid-2">
+              <div className="field">
+                <label htmlFor="condoFloorArea">Floor area (sqm)</label>
+                <input id="condoFloorArea" type="number" min="0" value={condoFloorArea} onChange={(e) => setCondoFloorArea(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="floorLevel">Floor level</label>
+                <input id="floorLevel" type="text" placeholder="e.g. 12th floor" value={floorLevel} onChange={(e) => setFloorLevel(e.target.value)} />
+              </div>
+            </div>
+            <div className="form-grid-2">
+              <div className="field">
+                <label htmlFor="bedrooms">Bedrooms</label>
+                <select id="bedrooms" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)}>
+                  <option value="">- Select -</option>
+                  {BEDROOM_OPTIONS.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="bathrooms">Bathrooms</label>
+                <input id="bathrooms" type="number" min="0" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="completionStatus">Completion status</label>
+              <select id="completionStatus" value={completionStatus} onChange={(e) => setCompletionStatus(e.target.value)}>
+                <option value="">- Select -</option>
+                {COMPLETION_OPTIONS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Amenities</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {AMENITIES.map((a) => {
+                  const on = amenities.includes(a)
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() =>
+                        setAmenities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]))
+                      }
+                      style={{
+                        padding: '2px 10px',
+                        background: on ? 'var(--color-primary)' : 'var(--color-beige)',
+                        color: on ? 'var(--color-ivory)' : 'var(--color-charcoal)',
+                      }}
+                    >
+                      {a}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {listingKind === 'property' && (
+          <>
         <label className="checkbox-row" style={{ marginBottom: 12 }}>
           <input type="checkbox" checked={hasStructure} onChange={(e) => setHasStructure(e.target.checked)} />
           Has a structure
@@ -673,6 +801,8 @@ export default function AdminNewListing() {
             </select>
           </div>
         </div>
+          </>
+        )}
 
         <div className="field">
           <label htmlFor="sellingPoint">Special selling point</label>
