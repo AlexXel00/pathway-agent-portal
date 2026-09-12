@@ -45,6 +45,7 @@ export default function AdminCondoProject() {
 
   // units
   const [units, setUnits] = useState<CondoUnit[]>([])
+  const [typeVis, setTypeVis] = useState<Record<string, boolean>>({})
   const [floorFilter, setFloorFilter] = useState<string>('all')
 
   // add-unit form
@@ -84,6 +85,12 @@ export default function AdminCondoProject() {
         .order('floor', { ascending: true })
         .order('unit_no', { ascending: true })
       setUnits((u as CondoUnit[]) ?? [])
+      const { data: t } = await supabase.from('condo_unit_types').select('*').eq('project_id', id)
+      const vis: Record<string, boolean> = {}
+      ;(t ?? []).forEach((row: { unit_type: string; show_on_website: boolean }) => {
+        vis[row.unit_type] = row.show_on_website
+      })
+      setTypeVis(vis)
       setLoading(false)
     })()
   }, [id, isNew])
@@ -185,6 +192,13 @@ export default function AdminCondoProject() {
     await supabase.from('condo_units').delete().eq('id', unitId)
   }
 
+  async function toggleType(ut: string, val: boolean) {
+    setTypeVis((prev) => ({ ...prev, [ut]: val }))
+    await supabase
+      .from('condo_unit_types')
+      .upsert({ project_id: id, unit_type: ut, show_on_website: val }, { onConflict: 'project_id,unit_type' })
+  }
+
   async function addUnit() {
     if (isNew || !id) return
     const payload = {
@@ -214,6 +228,26 @@ export default function AdminCondoProject() {
     : units.filter((u) => (u.floor_label || String(u.floor)) === floorFilter)
 
   const availableCount = units.filter((u) => u.status === 'available').length
+
+  const typeSummaries: Record<string, { avail: number; priceFrom: number | null; priceTo: number | null; areaFrom: number | null; areaTo: number | null }> = {}
+  for (const u of units) {
+    const t = u.unit_type || 'Other'
+    if (!typeSummaries[t]) typeSummaries[t] = { avail: 0, priceFrom: null, priceTo: null, areaFrom: null, areaTo: null }
+    if (u.status === 'available') {
+      const s = typeSummaries[t]
+      s.avail++
+      if (u.price_php != null) {
+        const v = Number(u.price_php)
+        s.priceFrom = s.priceFrom == null ? v : Math.min(s.priceFrom, v)
+        s.priceTo = s.priceTo == null ? v : Math.max(s.priceTo, v)
+      }
+      if (u.floor_area_sqm != null) {
+        const a = Number(u.floor_area_sqm)
+        s.areaFrom = s.areaFrom == null ? a : Math.min(s.areaFrom, a)
+        s.areaTo = s.areaTo == null ? a : Math.max(s.areaTo, a)
+      }
+    }
+  }
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -362,6 +396,39 @@ export default function AdminCondoProject() {
           {saving ? 'Saving...' : isNew ? 'Create project' : 'Save project'}
         </button>
       </form>
+
+      {!isNew && (
+        <div className="card" style={{ padding: '28px 30px', marginTop: 24 }}>
+          <h3 style={{ marginTop: 0 }}>Unit types (shown on website)</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+            Each type below becomes one card on the public website. Price range and available count are calculated
+            automatically from the units. Toggle a type off to hide just that card.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 14 }}>
+            {Object.keys(typeSummaries).sort().map((ut) => {
+              const s = typeSummaries[ut]
+              const on = typeVis[ut] !== false
+              const peso = (n: number | null) => (n == null ? '-' : 'PHP ' + Number(n).toLocaleString())
+              return (
+                <div key={ut} style={{ border: '1px solid var(--color-beige)', borderRadius: 10, padding: 14 }}>
+                  <p style={{ fontWeight: 600, margin: '0 0 6px' }}>{ut}</p>
+                  <p style={{ fontSize: '0.82rem', margin: '0 0 2px' }}>{s.avail} available</p>
+                  <p style={{ fontSize: '0.82rem', margin: '0 0 2px', color: 'var(--color-secondary)' }}>
+                    {s.priceFrom === s.priceTo ? peso(s.priceFrom) : `${peso(s.priceFrom)} - ${peso(s.priceTo)}`}
+                  </p>
+                  <p style={{ fontSize: '0.82rem', margin: '0 0 10px', color: 'var(--color-secondary)' }}>
+                    {s.areaFrom != null ? (s.areaFrom === s.areaTo ? `${s.areaFrom} sqm` : `${s.areaFrom}-${s.areaTo} sqm`) : ''}
+                  </p>
+                  <label className="checkbox-row" style={{ fontSize: '0.85rem' }}>
+                    <input type="checkbox" checked={on} onChange={(e) => toggleType(ut, e.target.checked)} />
+                    Show on website
+                  </label>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {!isNew && (
         <div className="card" style={{ padding: '28px 30px', marginTop: 24 }}>
