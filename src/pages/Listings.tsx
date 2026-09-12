@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import type { Agent, ListingStatus, Property } from '../lib/types'
+import type { Agent, ListingStatus, Property, CondoProject } from '../lib/types'
 import PropertyCard from '../components/PropertyCard'
 import PropertyDetailModal from '../components/PropertyDetailModal'
 import PropertyTable from '../components/PropertyTable'
@@ -25,6 +26,16 @@ export default function Listings() {
   const [view, setView] = useState<'cards' | 'table'>('cards')
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
+  const [condoProjects, setCondoProjects] = useState<CondoProject[]>([])
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    supabase
+      .from('condo_projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setCondoProjects((data as CondoProject[]) ?? []))
+  }, [])
 
   async function loadProperties() {
     // properties_for_agents masks the owner contact for non-admins at the database level -
@@ -115,6 +126,8 @@ export default function Listings() {
         ))}
       </div>
 
+      {kind === 'property' && (
+      <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           {TABS.map((t) => (
@@ -190,6 +203,52 @@ export default function Listings() {
           {filtered.map((p) => (
             <PropertyCard key={p.id} property={p} onClick={() => setSelected(p)} />
           ))}
+        </div>
+      )}
+      </>
+      )}
+
+      {kind === 'condo' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <p style={{ color: 'var(--color-secondary)', margin: 0 }}>
+              {condoProjects.length} condo {condoProjects.length === 1 ? 'project' : 'projects'}
+            </p>
+            {agent?.is_admin && (
+              <button className="btn btn-primary" onClick={() => navigate('/admin/condo/new')}>
+                New condo project
+              </button>
+            )}
+          </div>
+          {condoProjects.length === 0 ? (
+            <p style={{ color: 'var(--color-secondary)' }}>No condo projects yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 18 }}>
+              {condoProjects.map((cp) => (
+                <div
+                  key={cp.id}
+                  className="card"
+                  style={{ padding: 20, cursor: agent?.is_admin ? 'pointer' : 'default' }}
+                  onClick={() => agent?.is_admin && navigate(`/admin/condo/${cp.id}`)}
+                >
+                  {cp.photos && cp.photos.length > 0 && (
+                    <img
+                      src={cp.photos[0]}
+                      alt=""
+                      style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 8, marginBottom: 12 }}
+                    />
+                  )}
+                  <p style={{ fontWeight: 600, marginBottom: 4 }}>{cp.name}</p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', margin: 0 }}>
+                    {[cp.municipality, cp.completion_status].filter(Boolean).join(' - ')}
+                  </p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 6, marginBottom: 0 }}>
+                    {cp.show_on_website ? 'On website' : 'Hidden'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
