@@ -180,3 +180,36 @@ export interface CompanyInfo {
   sort_order: number
   created_at: string
 }
+
+export interface CondoProject {
+  id: string
+  name: string
+  developer: string | null
+  municipality: string | null
+  barangay: string | null
+  completion_status: string | null
+  amenities: string[]
+  description: string | null
+  tags: string[]
+  photos: string[]
+  website_photos: string[]
+  videos: string[]
+  map_url: string | null
+  floors: number | null
+  listing_status: string | null
+  show_on_website: boolean
+}
+
+export interface CondoUnit {
+  id: string
+  project_id: string
+  floor: number | null
+  floor_label: string | null
+  unit_no: string | null
+  unit_type: string | null
+  floor_area_sqm: number | null
+  price_php: number | null
+  tcp_php: number | null
+  reservation_fee_php: number | null
+  status: string
+}
