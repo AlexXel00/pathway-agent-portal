@@ -9,6 +9,7 @@ import Agents from './pages/Agents'
 import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
 import AdminCondoProject from './pages/AdminCondoProject'
+import AdminCondoType from './pages/AdminCondoType'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
 import Chat from './pages/Chat'
@@ -82,6 +83,14 @@ function AppRoutes() {
           element={
             <AdminOnly>
               <AdminCondoProject />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/condo/:id/type/:type"
+          element={
+            <AdminOnly>
+              <AdminCondoType />
             </AdminOnly>
           }
         />
