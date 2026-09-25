@@ -271,7 +271,11 @@ export default function Listings() {
                       return (
                         <div
                           key={t.unit_type}
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, borderTop: '1px solid var(--color-beige)', paddingTop: 8, marginTop: 8 }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (agent?.is_admin) navigate(`/admin/condo/${cp.id}/type/${encodeURIComponent(t.unit_type)}`)
+                          }}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, borderTop: '1px solid var(--color-beige)', paddingTop: 8, marginTop: 8, cursor: agent?.is_admin ? 'pointer' : 'default' }}
                         >
                           <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.unit_type}</span>
                           <span style={{ fontSize: '0.76rem', color: 'var(--color-secondary)', textAlign: 'right' }}>
