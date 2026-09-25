@@ -45,7 +45,7 @@ export default function AdminCondoProject() {
 
   // units
   const [units, setUnits] = useState<CondoUnit[]>([])
-  const [typeVis, setTypeVis] = useState<Record<string, boolean>>({})
+  const [typeMeta, setTypeMeta] = useState<Record<string, { show_on_website: boolean; photos: string[] }>>({})
   const [floorFilter, setFloorFilter] = useState<string>('all')
 
   // add-unit form
@@ -86,11 +86,11 @@ export default function AdminCondoProject() {
         .order('unit_no', { ascending: true })
       setUnits((u as CondoUnit[]) ?? [])
       const { data: t } = await supabase.from('condo_unit_types').select('*').eq('project_id', id)
-      const vis: Record<string, boolean> = {}
-      ;(t ?? []).forEach((row: { unit_type: string; show_on_website: boolean }) => {
-        vis[row.unit_type] = row.show_on_website
+      const meta: Record<string, { show_on_website: boolean; photos: string[] }> = {}
+      ;(t ?? []).forEach((row: { unit_type: string; show_on_website: boolean; photos: string[] | null }) => {
+        meta[row.unit_type] = { show_on_website: row.show_on_website, photos: row.photos ?? [] }
       })
-      setTypeVis(vis)
+      setTypeMeta(meta)
       setLoading(false)
     })()
   }, [id, isNew])
@@ -99,11 +99,11 @@ export default function AdminCondoProject() {
     setAmenities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]))
   }
 
-  async function uploadFiles(files: File[]) {
+  async function uploadFilesReturn(files: File[], sub = ''): Promise<string[]> {
     const folder = slugify(name || 'condo-project') || `condo-${Date.now()}`
     const uploaded: string[] = []
     for (const file of files) {
-      const path = `condos/${folder}/${Date.now()}-${slugify(file.name)}`
+      const path = `condos/${folder}/${sub}${Date.now()}-${slugify(file.name)}`
       const { error: ue } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
         contentType: file.type || 'image/jpeg',
       })
@@ -114,7 +114,7 @@ export default function AdminCondoProject() {
       const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
       uploaded.push(data.publicUrl)
     }
-    setPhotoUrls((prev) => [...prev, ...uploaded])
+    return uploaded
   }
 
   async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
@@ -122,7 +122,8 @@ export default function AdminCondoProject() {
     if (!files || files.length === 0) return
     setUploadingPhotos(true)
     setError(null)
-    await uploadFiles(Array.from(files))
+    const urls = await uploadFilesReturn(Array.from(files))
+    setPhotoUrls((prev) => [...prev, ...urls])
     setUploadingPhotos(false)
     e.target.value = ''
   }
@@ -134,7 +135,8 @@ export default function AdminCondoProject() {
       const files = await pickImagesFromGoogleDrive()
       if (files.length > 0) {
         setUploadingPhotos(true)
-        await uploadFiles(files)
+        const urls = await uploadFilesReturn(files)
+        setPhotoUrls((prev) => [...prev, ...urls])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google Drive selection failed.')
@@ -192,11 +194,52 @@ export default function AdminCondoProject() {
     await supabase.from('condo_units').delete().eq('id', unitId)
   }
 
-  async function toggleType(ut: string, val: boolean) {
-    setTypeVis((prev) => ({ ...prev, [ut]: val }))
+  async function updateType(ut: string, patch: Partial<{ show_on_website: boolean; photos: string[] }>) {
+    const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+    const next = { ...cur, ...patch }
+    setTypeMeta((prev) => ({ ...prev, [ut]: next }))
     await supabase
       .from('condo_unit_types')
-      .upsert({ project_id: id, unit_type: ut, show_on_website: val }, { onConflict: 'project_id,unit_type' })
+      .upsert(
+        { project_id: id, unit_type: ut, show_on_website: next.show_on_website, photos: next.photos },
+        { onConflict: 'project_id,unit_type' },
+      )
+  }
+
+  async function handleTypePhotos(ut: string, e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setUploadingPhotos(true)
+    setError(null)
+    const urls = await uploadFilesReturn(Array.from(files), `${slugify(ut)}/`)
+    const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+    await updateType(ut, { photos: [...cur.photos, ...urls] })
+    setUploadingPhotos(false)
+    e.target.value = ''
+  }
+
+  async function handleTypeDrive(ut: string) {
+    setError(null)
+    setPickingDrive(true)
+    try {
+      const files = await pickImagesFromGoogleDrive()
+      if (files.length > 0) {
+        setUploadingPhotos(true)
+        const urls = await uploadFilesReturn(files, `${slugify(ut)}/`)
+        const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+        await updateType(ut, { photos: [...cur.photos, ...urls] })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google Drive selection failed.')
+    } finally {
+      setUploadingPhotos(false)
+      setPickingDrive(false)
+    }
+  }
+
+  function removeTypePhoto(ut: string, url: string) {
+    const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+    updateType(ut, { photos: cur.photos.filter((u) => u !== url) })
   }
 
   async function addUnit() {
@@ -407,7 +450,8 @@ export default function AdminCondoProject() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 14 }}>
             {Object.keys(typeSummaries).sort().map((ut) => {
               const s = typeSummaries[ut]
-              const on = typeVis[ut] !== false
+              const meta = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+              const on = meta.show_on_website
               const peso = (n: number | null) => (n == null ? '-' : 'PHP ' + Number(n).toLocaleString())
               return (
                 <div key={ut} style={{ border: '1px solid var(--color-beige)', borderRadius: 10, padding: 14 }}>
@@ -419,8 +463,46 @@ export default function AdminCondoProject() {
                   <p style={{ fontSize: '0.82rem', margin: '0 0 10px', color: 'var(--color-secondary)' }}>
                     {s.areaFrom != null ? (s.areaFrom === s.areaTo ? `${s.areaFrom} sqm` : `${s.areaFrom}-${s.areaTo} sqm`) : ''}
                   </p>
+
+                  <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: '0 0 6px', color: 'var(--color-secondary)' }}>
+                    Photos for this type
+                  </p>
+                  {meta.photos.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                      {meta.photos.map((url) => (
+                        <div key={url} style={{ position: 'relative' }}>
+                          <img src={url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6 }} />
+                          <button
+                            type="button"
+                            onClick={() => removeTypePhoto(ut, url)}
+                            style={{ position: 'absolute', top: 1, right: 1, background: 'var(--color-danger)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 10, padding: '0 4px' }}
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handleTypePhotos(ut, e)}
+                    disabled={uploadingPhotos}
+                    style={{ fontSize: '0.75rem', maxWidth: '100%' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => handleTypeDrive(ut)}
+                    disabled={pickingDrive || uploadingPhotos}
+                    style={{ padding: '2px 8px', fontSize: '0.75rem', marginTop: 6, marginBottom: 10 }}
+                  >
+                    {pickingDrive ? 'Google Drive...' : 'Aus Google Drive'}
+                  </button>
+
                   <label className="checkbox-row" style={{ fontSize: '0.85rem' }}>
-                    <input type="checkbox" checked={on} onChange={(e) => toggleType(ut, e.target.checked)} />
+                    <input type="checkbox" checked={on} onChange={(e) => updateType(ut, { show_on_website: e.target.checked })} />
                     Show on website
                   </label>
                 </div>

@@ -27,6 +27,14 @@ export default function Listings() {
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
   const [condoProjects, setCondoProjects] = useState<CondoProject[]>([])
+  const [condoTypes, setCondoTypes] = useState<Array<{
+    project_id: string
+    unit_type: string
+    type_on_website: boolean
+    available_count: number
+    price_from: number | null
+    price_to: number | null
+  }>>([])
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -35,6 +43,10 @@ export default function Listings() {
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data }) => setCondoProjects((data as CondoProject[]) ?? []))
+    supabase
+      .from('condo_type_summary')
+      .select('*')
+      .then(({ data }) => setCondoTypes((data as typeof condoTypes) ?? []))
   }, [])
 
   async function loadProperties() {
@@ -245,6 +257,29 @@ export default function Listings() {
                   <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 6, marginBottom: 0 }}>
                     {cp.show_on_website ? 'On website' : 'Hidden'}
                   </p>
+                  {condoTypes
+                    .filter((t) => t.project_id === cp.id)
+                    .sort((a, b) => a.unit_type.localeCompare(b.unit_type))
+                    .map((t) => {
+                      const peso = (n: number | null) => (n == null ? '-' : 'PHP ' + Number(n).toLocaleString())
+                      const price =
+                        t.price_from == null
+                          ? ''
+                          : t.price_from === t.price_to
+                            ? peso(t.price_from)
+                            : `${peso(t.price_from)} - ${peso(t.price_to)}`
+                      return (
+                        <div
+                          key={t.unit_type}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, borderTop: '1px solid var(--color-beige)', paddingTop: 8, marginTop: 8 }}
+                        >
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.unit_type}</span>
+                          <span style={{ fontSize: '0.76rem', color: 'var(--color-secondary)', textAlign: 'right' }}>
+                            {t.available_count} available{price ? ` \u00b7 ${price}` : ''}{!t.type_on_website ? ' \u00b7 hidden' : ''}
+                          </span>
+                        </div>
+                      )
+                    })}
                 </div>
               ))}
             </div>
