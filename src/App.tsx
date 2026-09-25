@@ -8,6 +8,7 @@ import MyActivity from './pages/MyActivity'
 import Agents from './pages/Agents'
 import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
+import AdminCondoProject from './pages/AdminCondoProject'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
 import Chat from './pages/Chat'
@@ -73,6 +74,14 @@ function AppRoutes() {
           element={
             <AdminOnly>
               <AdminNewListing />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/condo/:id"
+          element={
+            <AdminOnly>
+              <AdminCondoProject />
             </AdminOnly>
           }
         />
