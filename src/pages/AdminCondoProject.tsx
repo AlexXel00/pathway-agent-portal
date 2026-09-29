@@ -150,6 +150,18 @@ export default function AdminCondoProject() {
     setPhotoUrls((prev) => prev.filter((u) => u !== url))
   }
 
+  function movePhoto(index: number, dir: -1 | 1) {
+    setPhotoUrls((prev) => {
+      const target = index + dir
+      if (target < 0 || target >= prev.length) return prev
+      const next = [...prev]
+      const tmp = next[index]
+      next[index] = next[target]
+      next[target] = tmp
+      return next
+    })
+  }
+
   async function saveProject() {
     setError(null)
     if (!name.trim()) {
@@ -240,6 +252,17 @@ export default function AdminCondoProject() {
   function removeTypePhoto(ut: string, url: string) {
     const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
     updateType(ut, { photos: cur.photos.filter((u) => u !== url) })
+  }
+
+  function moveTypePhoto(ut: string, index: number, dir: -1 | 1) {
+    const cur = typeMeta[ut] ?? { show_on_website: true, photos: [] }
+    const target = index + dir
+    if (target < 0 || target >= cur.photos.length) return
+    const next = [...cur.photos]
+    const tmp = next[index]
+    next[index] = next[target]
+    next[target] = tmp
+    updateType(ut, { photos: next })
   }
 
   async function addUnit() {
@@ -400,9 +423,12 @@ export default function AdminCondoProject() {
           {uploadingPhotos && <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)' }}>Uploading...</p>}
           {photoUrls.length > 0 && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              {photoUrls.map((url) => (
+              {photoUrls.map((url, i) => (
                 <div key={url} style={{ position: 'relative' }}>
-                  <img src={url} alt="" style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 6 }} />
+                  <img src={url} alt="" style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 6, border: i === 0 ? '2px solid var(--color-primary)' : '2px solid transparent' }} />
+                  {i === 0 && (
+                    <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'var(--color-primary)', color: '#fff', fontSize: 9, padding: '0 4px', borderRadius: 3 }}>Cover</span>
+                  )}
                   <button
                     type="button"
                     onClick={() => removePhoto(url)}
@@ -410,6 +436,10 @@ export default function AdminCondoProject() {
                   >
                     x
                   </button>
+                  <div style={{ position: 'absolute', bottom: 2, right: 2, display: 'flex', gap: 2 }}>
+                    <button type="button" onClick={() => movePhoto(i, -1)} disabled={i === 0} style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 3, cursor: i === 0 ? 'default' : 'pointer', fontSize: 11, padding: '0 5px', opacity: i === 0 ? 0.4 : 1 }}>&larr;</button>
+                    <button type="button" onClick={() => movePhoto(i, 1)} disabled={i === photoUrls.length - 1} style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 3, cursor: i === photoUrls.length - 1 ? 'default' : 'pointer', fontSize: 11, padding: '0 5px', opacity: i === photoUrls.length - 1 ? 0.4 : 1 }}>&rarr;</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -469,9 +499,12 @@ export default function AdminCondoProject() {
                   </p>
                   {meta.photos.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                      {meta.photos.map((url) => (
+                      {meta.photos.map((url, i) => (
                         <div key={url} style={{ position: 'relative' }}>
-                          <img src={url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6 }} />
+                          <img src={url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: i === 0 ? '2px solid var(--color-primary)' : '2px solid transparent' }} />
+                          {i === 0 && (
+                            <span style={{ position: 'absolute', bottom: 1, left: 1, background: 'var(--color-primary)', color: '#fff', fontSize: 8, padding: '0 3px', borderRadius: 3 }}>Cover</span>
+                          )}
                           <button
                             type="button"
                             onClick={() => removeTypePhoto(ut, url)}
@@ -479,6 +512,10 @@ export default function AdminCondoProject() {
                           >
                             x
                           </button>
+                          <div style={{ position: 'absolute', bottom: 1, right: 1, display: 'flex', gap: 2 }}>
+                            <button type="button" onClick={() => moveTypePhoto(ut, i, -1)} disabled={i === 0} style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 10, padding: '0 4px', opacity: i === 0 ? 0.4 : 1 }}>&larr;</button>
+                            <button type="button" onClick={() => moveTypePhoto(ut, i, 1)} disabled={i === meta.photos.length - 1} style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 10, padding: '0 4px', opacity: i === meta.photos.length - 1 ? 0.4 : 1 }}>&rarr;</button>
+                          </div>
                         </div>
                       ))}
                     </div>
