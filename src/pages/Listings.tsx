@@ -36,6 +36,7 @@ export default function Listings() {
     price_to: number | null
   }>>([])
   const navigate = useNavigate()
+  const [condoDevelopments, setCondoDevelopments] = useState<Array<{ id: string; name: string; description: string | null }>>([])
 
   useEffect(() => {
     supabase
@@ -47,6 +48,11 @@ export default function Listings() {
       .from('condo_type_summary')
       .select('*')
       .then(({ data }) => setCondoTypes((data as typeof condoTypes) ?? []))
+    supabase
+      .from('condo_developments')
+      .select('id, name, description')
+      .order('name')
+      .then(({ data }) => setCondoDevelopments((data as typeof condoDevelopments) ?? []))
   }, [])
 
   async function loadProperties() {
@@ -222,6 +228,34 @@ export default function Listings() {
 
       {kind === 'condo' && (
         <div>
+          {agent?.is_admin && (
+            <div style={{ border: '1px solid var(--color-beige)', borderRadius: 10, padding: '14px 16px', marginBottom: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: condoDevelopments.length ? 10 : 0 }}>
+                <p style={{ fontWeight: 600, margin: 0, fontSize: '0.9rem' }}>Developments</p>
+                <button className="btn btn-outline" onClick={() => navigate('/admin/development/new')}>
+                  New development
+                </button>
+              </div>
+              {condoDevelopments.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {condoDevelopments.map((d) => (
+                    <button
+                      key={d.id}
+                      className="btn btn-ghost"
+                      onClick={() => navigate(`/admin/development/${d.id}`)}
+                      style={{ background: 'var(--color-beige)', color: 'var(--color-charcoal)' }}
+                      title={d.description ? 'Has shared description' : 'No shared description yet'}
+                    >
+                      {d.name}{d.description ? '' : ' *'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', margin: '8px 0 0' }}>
+                A development's description is shown on the website for all its towers. Assign a tower to a development in the tower editor. (* = no description yet)
+              </p>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <p style={{ color: 'var(--color-secondary)', margin: 0 }}>
               {condoProjects.length} condo {condoProjects.length === 1 ? 'project' : 'projects'}

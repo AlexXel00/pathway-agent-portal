@@ -39,6 +39,8 @@ export default function AdminCondoProject() {
   const [mapUrl, setMapUrl] = useState('')
   const [listingStatus, setListingStatus] = useState('Active')
   const [showOnWebsite, setShowOnWebsite] = useState(false)
+  const [developmentId, setDevelopmentId] = useState('')
+  const [developments, setDevelopments] = useState<Array<{ id: string; name: string }>>([])
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [pickingDrive, setPickingDrive] = useState(false)
@@ -76,6 +78,7 @@ export default function AdminCondoProject() {
       setMapUrl(p.map_url ?? '')
       setListingStatus(p.listing_status ?? 'Active')
       setShowOnWebsite(p.show_on_website ?? false)
+      setDevelopmentId(p.development_id ?? '')
       setPhotoUrls(p.photos ?? [])
 
       const { data: u } = await supabase
@@ -94,6 +97,14 @@ export default function AdminCondoProject() {
       setLoading(false)
     })()
   }, [id, isNew])
+
+  useEffect(() => {
+    supabase
+      .from('condo_developments')
+      .select('id, name')
+      .order('name')
+      .then(({ data }) => setDevelopments((data as Array<{ id: string; name: string }>) ?? []))
+  }, [])
 
   function toggleAmenity(a: string) {
     setAmenities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]))
@@ -181,6 +192,7 @@ export default function AdminCondoProject() {
       map_url: mapUrl || null,
       listing_status: listingStatus,
       show_on_website: showOnWebsite,
+      development_id: developmentId || null,
       photos: photoUrls,
     }
     const res = isNew
@@ -372,6 +384,16 @@ export default function AdminCondoProject() {
             <label htmlFor="floors">Number of floors</label>
             <input id="floors" type="number" min="0" value={floors} onChange={(e) => setFloors(e.target.value)} />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="development">Development (shared description shown on website)</label>
+          <select id="development" value={developmentId} onChange={(e) => setDevelopmentId(e.target.value)}>
+            <option value="">- None -</option>
+            {developments.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="field">
