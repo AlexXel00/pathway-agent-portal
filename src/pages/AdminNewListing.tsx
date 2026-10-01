@@ -71,6 +71,8 @@ export default function AdminNewListing() {
   const { id } = useParams<{ id: string }>()
   const { agent } = useAuth()
   const isHeadAdmin = agent?.is_head_admin ?? false
+  const canViewMarkup = agent?.can_view_markup ?? false
+  const [ownerPrice, setOwnerPrice] = useState('')
   const isEdit = Boolean(id)
   const [loadingExisting, setLoadingExisting] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -214,6 +216,18 @@ export default function AdminNewListing() {
       cancelled = true
     }
   }, [id])
+
+  useEffect(() => {
+    if (!isEdit || !canViewMarkup || !id) return
+    supabase
+      .from('property_markup')
+      .select('owner_price_php')
+      .eq('property_id', id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && data.owner_price_php != null) setOwnerPrice(String(data.owner_price_php))
+      })
+  }, [isEdit, canViewMarkup, id])
 
   function toggleTag(tag: string) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
@@ -448,14 +462,22 @@ export default function AdminNewListing() {
       ? await supabase.from('properties').update(payload).eq('id', id).select().single()
       : await supabase.from('properties').insert(payload).select().single()
 
-    setSaving(false)
     if (error) {
+      setSaving(false)
       setError(error.message)
       return
     }
+
+    if (canViewMarkup && data?.id) {
+      await supabase.from('property_markup').upsert(
+        { property_id: data.id, owner_price_php: ownerPrice ? Number(ownerPrice) : null },
+        { onConflict: 'property_id' },
+      )
+    }
+
+    setSaving(false)
     setSuccess(true)
     setTimeout(() => navigate(`/listings`), 900)
-    void data
   }
 
   if (loadingExisting) {
@@ -892,6 +914,28 @@ export default function AdminNewListing() {
           Auto-calculated as 30% of the 5% total commission, minus 1% for the broker if one is set (shared
           between both brokers when two are set) - edit it directly if this deal is different.
         </p>
+
+        {canViewMarkup && (
+          <>
+            <div className="form-grid-2" style={{ background: '#f7f1e8', borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
+              <div className="field">
+                <label htmlFor="ownerPrice">Owner price (PHP) - confidential</label>
+                <input id="ownerPrice" type="number" min="0" value={ownerPrice} onChange={(e) => setOwnerPrice(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Markup over owner price</label>
+                <p style={{ margin: '8px 0 0', fontWeight: 600 }}>
+                  {ownerPrice && priceTotal && Number(ownerPrice) > 0
+                    ? `PHP ${(Number(priceTotal) - Number(ownerPrice)).toLocaleString()} (${(((Number(priceTotal) - Number(ownerPrice)) / Number(ownerPrice)) * 100).toFixed(1)}%)`
+                    : '-'}
+                </p>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-secondary)', marginTop: 0, marginBottom: 16 }}>
+              Visible only to markup-authorised users. The owner price is stored in a separate, access-restricted table and is never shown to other agents.
+            </p>
+          </>
+        )}
 
         <div className="form-grid-2">
           <div className="field">
