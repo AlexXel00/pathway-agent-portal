@@ -10,6 +10,7 @@ import CompanyInfo from './pages/CompanyInfo'
 import AdminNewListing from './pages/AdminNewListing'
 import AdminCondoProject from './pages/AdminCondoProject'
 import AdminCondoDevelopment from './pages/AdminCondoDevelopment'
+import AdminMarkup from './pages/AdminMarkup'
 import AdminCondoType from './pages/AdminCondoType'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
@@ -92,6 +93,14 @@ function AppRoutes() {
           element={
             <AdminOnly>
               <AdminCondoDevelopment />
+            </AdminOnly>
+          }
+        />
+        <Route
+          path="/admin/markup"
+          element={
+            <AdminOnly>
+              <AdminMarkup />
             </AdminOnly>
           }
         />
