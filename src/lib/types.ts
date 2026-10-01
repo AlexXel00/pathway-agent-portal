@@ -27,6 +27,7 @@ export interface Agent {
   // The head admin's admin rights cannot be revoked by anyone, including other admins -
   // enforced by a database trigger, not just hidden in the UI.
   is_head_admin: boolean
+  can_view_markup: boolean
   role: AgentRole
   notes: string | null
   created_at: string
@@ -198,6 +199,7 @@ export interface CondoProject {
   floors: number | null
   listing_status: string | null
   show_on_website: boolean
+  development_id: string | null
 }
 
 export interface CondoUnit {
@@ -212,4 +214,12 @@ export interface CondoUnit {
   tcp_php: number | null
   reservation_fee_php: number | null
   status: string
+}
+
+export interface CondoDevelopment {
+  id: string
+  name: string
+  description: string | null
+  amenities: string[]
+  photos: string[]
 }
