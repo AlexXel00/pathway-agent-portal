@@ -130,6 +130,11 @@ export default function Layout() {
                   Manage Agents
                 </NavLink>
               )}
+              {agent?.can_view_markup && (
+                <NavLink to="/admin/markup" style={navLinkStyle}>
+                  Markup
+                </NavLink>
+              )}
             </nav>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, order: 2 }}>
