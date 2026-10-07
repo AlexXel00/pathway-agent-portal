@@ -89,6 +89,9 @@ export interface Property {
   special_selling_point: string | null
   tags: string[]
   description: string | null
+  name_de?: string | null
+  description_de?: string | null
+  build_area_text_de?: string | null
   price_total_php: number | null
   price_per_sqm_php: number | null
   approx_commission_php: number | null
@@ -220,6 +223,7 @@ export interface CondoDevelopment {
   id: string
   name: string
   description: string | null
+  description_de?: string | null
   amenities: string[]
   photos: string[]
 }

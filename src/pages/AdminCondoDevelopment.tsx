@@ -24,6 +24,7 @@ export default function AdminCondoDevelopment() {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [descriptionDe, setDescriptionDe] = useState('')   // German website, optional
   const [amenities, setAmenities] = useState<string[]>([])
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
@@ -41,6 +42,7 @@ export default function AdminCondoDevelopment() {
       }
       setName(d.name ?? '')
       setDescription(d.description ?? '')
+      setDescriptionDe(d.description_de ?? '')
       setAmenities(d.amenities ?? [])
       setPhotoUrls(d.photos ?? [])
       const { data: projs } = await supabase.from('condo_projects').select('name').eq('development_id', id).order('name')
@@ -126,6 +128,7 @@ export default function AdminCondoDevelopment() {
     const payload = {
       name: name.trim(),
       description: description || null,
+      description_de: descriptionDe.trim() || null,
       amenities,
       photos: photoUrls,
     }
@@ -170,6 +173,15 @@ export default function AdminCondoDevelopment() {
         <div className="field">
           <label htmlFor="description">Shared description (shown on all towers)</label>
           <textarea id="description" rows={7} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+
+        <div className="field" style={{ borderLeft: '2px solid var(--color-beige)', paddingLeft: 14 }}>
+          <label htmlFor="descriptionDe">Shared description, German (optional)</label>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+            Shown on the German website (pathwayphilippines.com/de/). If left empty, the English description is shown
+            there instead.
+          </p>
+          <textarea id="descriptionDe" rows={7} value={descriptionDe} onChange={(e) => setDescriptionDe(e.target.value)} />
         </div>
 
         <div className="field">

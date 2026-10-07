@@ -108,6 +108,10 @@ export default function AdminNewListing() {
   const [tags, setTags] = useState<string[]>([])
   const [customTag, setCustomTag] = useState('')
   const [description, setDescription] = useState('')
+  // German versions for the German website (optional; the English text is used when empty)
+  const [nameDe, setNameDe] = useState('')
+  const [descriptionDe, setDescriptionDe] = useState('')
+  const [buildAreaTextDe, setBuildAreaTextDe] = useState('')
   const [priceTotal, setPriceTotal] = useState('')
   const [approxCommission, setApproxCommission] = useState('')
   const [listingAgentId, setListingAgentId] = useState('')
@@ -184,6 +188,9 @@ export default function AdminNewListing() {
       setSellingPoint(data.special_selling_point ?? '')
       setTags(data.tags ?? [])
       setDescription(data.description ?? '')
+      setNameDe(data.name_de ?? '')
+      setDescriptionDe(data.description_de ?? '')
+      setBuildAreaTextDe(data.build_area_text_de ?? '')
       setPriceTotal(data.price_total_php != null ? String(data.price_total_php) : '')
       setApproxCommission(data.approx_commission_php != null ? String(data.approx_commission_php) : '')
       setListingAgentId(data.listing_agent_id ?? (data.listing_agent_other_name ? 'other' : ''))
@@ -427,6 +434,10 @@ export default function AdminNewListing() {
       special_selling_point: sellingPoint || null,
       tags,
       description: description || null,
+      name_de: nameDe.trim() || null,
+      description_de: descriptionDe.trim() || null,
+      build_area_text_de:
+        listingKind === 'property' && hasStructure && buildAreaMode === 'text' && buildAreaTextDe.trim() ? buildAreaTextDe.trim() : null,
       price_total_php: priceTotal ? Number(priceTotal) : null,
       approx_commission_php: approxCommission ? Number(approxCommission) : null,
       listing_agent_id: listingAgentId && listingAgentId !== 'other' ? listingAgentId : null,
@@ -889,6 +900,30 @@ export default function AdminNewListing() {
         <div className="field">
           <label htmlFor="description">Description</label>
           <textarea id="description" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+
+        <div className="field" style={{ borderLeft: '2px solid var(--color-beige)', paddingLeft: 14 }}>
+          <label>German version for the website (optional)</label>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+            Shown on the German website (pathwayphilippines.com/de/). If a field is left empty, the English text is
+            shown there instead.
+          </p>
+          <label htmlFor="nameDe">Property name (German)</label>
+          <input id="nameDe" type="text" value={nameDe} onChange={(e) => setNameDe(e.target.value)} />
+          {listingKind === 'property' && hasStructure && buildAreaMode === 'text' && (
+            <>
+              <label htmlFor="buildAreaTextDe" style={{ marginTop: 12 }}>Build area (German)</label>
+              <input
+                id="buildAreaTextDe"
+                type="text"
+                placeholder="z.B. 7 Villen"
+                value={buildAreaTextDe}
+                onChange={(e) => setBuildAreaTextDe(e.target.value)}
+              />
+            </>
+          )}
+          <label htmlFor="descriptionDe" style={{ marginTop: 12 }}>Description (German)</label>
+          <textarea id="descriptionDe" rows={5} value={descriptionDe} onChange={(e) => setDescriptionDe(e.target.value)} />
         </div>
 
         <div className="form-grid-2">
