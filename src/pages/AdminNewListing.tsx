@@ -138,6 +138,7 @@ export default function AdminNewListing() {
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [websitePhotos, setWebsitePhotos] = useState<string[]>([])
+  const [showOnWebsite, setShowOnWebsite] = useState(false)
   const [uploadingWebsitePhotos, setUploadingWebsitePhotos] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
   // Tracks whether the commission field still holds our auto-computed suggestion (true) or
@@ -211,6 +212,7 @@ export default function AdminNewListing() {
       setEditedMediaUrl(data.edited_media_url ?? '')
       setPhotoUrls(data.photos ?? [])
       setWebsitePhotos(data.website_photos ?? [])
+      setShowOnWebsite(data.show_on_website ?? false)
       setListingStatus((data.listing_status as ListingStatus) ?? 'Active')
       setClosingAgentId(data.closing_agent_id ?? (data.closing_agent_other_name ? 'other' : ''))
       setClosingAgentOtherName(data.closing_agent_other_name ?? '')
@@ -452,6 +454,7 @@ export default function AdminNewListing() {
       broker2_contact: broker2 ? broker2Contact || null : null,
       photos: photoUrls,
       website_photos: websitePhotos,
+      ...(isHeadAdmin ? { show_on_website: showOnWebsite } : {}),
       videos: videoUrls
         .split(/\n|,/)
         .map((v) => v.trim())
@@ -1162,6 +1165,14 @@ export default function AdminNewListing() {
 
         {isHeadAdmin && (
           <div className="field">
+            <label className="checkbox-row" style={{ marginBottom: 6 }}>
+              <input type="checkbox" checked={showOnWebsite} onChange={(e) => setShowOnWebsite(e.target.checked)} />
+              Auf der oeffentlichen Website anzeigen
+            </label>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 0, marginBottom: 18 }}>
+              Nur Listings mit diesem Haekchen erscheinen auf pathwayphilippines.com. Der Status "Active" allein reicht
+              dafuer nicht aus.
+            </p>
             <label>Website-Fotos (nur Head-Admin)</label>
             <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', marginTop: 0 }}>
               Waehle aus, welche Fotos auf der oeffentlichen Website erscheinen, und bringe sie in die gewuenschte
