@@ -1,18 +1,18 @@
-import { computeGeometry, layoutDrawing, type LotSide } from '../lib/lotShape'
+import { layoutDrawing, polygonArea, type NormalizedLotShape } from '../lib/lotShape'
 import { formatNumber } from '../lib/format'
 
 interface Props {
-  sides: LotSide[]
+  shape: NormalizedLotShape
   // Lot size as entered on the listing, shown next to the area computed from the shape.
   lotSizeSqm?: number | null
   showStats?: boolean
 }
 
-// Draws the exact lot shape with the length of every boundary. No map, no real location.
-export default function LotShapeDrawing({ sides, lotSizeSqm, showStats = true }: Props) {
-  const drawing = layoutDrawing(sides)
-  const geo = computeGeometry(sides)
-  if (!drawing || !geo) return null
+// Draws the lot shape with the length of every boundary. No map, no real location.
+export default function LotShapeDrawing({ shape, lotSizeSqm, showStats = true }: Props) {
+  const drawing = layoutDrawing(shape)
+  const area = polygonArea(shape.points)
+  const perimeter = shape.lengths.reduce((s, l) => s + l, 0)
 
   return (
     <div>
@@ -24,16 +24,15 @@ export default function LotShapeDrawing({ sides, lotSizeSqm, showStats = true }:
           aria-label="Lot shape with boundary lengths"
         >
           <polygon
-            points={drawing.polygon}
+            points={drawing.points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
             fill="rgba(182,161,128,0.16)"
             stroke="#7e6454"
             strokeWidth={1.4}
             strokeLinejoin="round"
           />
-          {drawing.polygon.split(' ').map((pair, i) => {
-            const [x, y] = pair.split(',').map(Number)
-            return <circle key={i} cx={x} cy={y} r={2.6} fill="#7e6454" />
-          })}
+          {drawing.points.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={2.6} fill="#7e6454" />
+          ))}
           {drawing.sideLabels.map((l, i) => (
             <text
               key={`s${i}`}
@@ -59,19 +58,21 @@ export default function LotShapeDrawing({ sides, lotSizeSqm, showStats = true }:
               {c.text}
             </text>
           ))}
-          <g transform={`translate(${drawing.north.x} ${drawing.north.y})`}>
-            <path d="M0 0 L5 16 L0 12 L-5 16 Z" fill="#7e6454" />
-            <text x={0} y={28} textAnchor="middle" style={{ fontFamily: 'var(--font-body)', fontSize: 9, fill: '#7e6454' }}>
-              N
-            </text>
-          </g>
+          {drawing.north && (
+            <g transform={`translate(${drawing.north.x} ${drawing.north.y})`}>
+              <path d="M0 0 L5 16 L0 12 L-5 16 Z" fill="#7e6454" />
+              <text x={0} y={28} textAnchor="middle" style={{ fontFamily: 'var(--font-body)', fontSize: 9, fill: '#7e6454' }}>
+                N
+              </text>
+            </g>
+          )}
         </svg>
       </div>
       {showStats && (
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--color-secondary)', marginTop: 8 }}>
-          <span>Area from shape: {formatNumber(Math.round(geo.areaSqm))} sqm</span>
+          <span>Area from shape: approx. {formatNumber(Math.round(area))} sqm</span>
           {lotSizeSqm ? <span>Lot size on listing: {formatNumber(lotSizeSqm)} sqm</span> : null}
-          <span>Perimeter: {formatNumber(Math.round(geo.perimeterM * 10) / 10)} m</span>
+          <span>Perimeter: {formatNumber(Math.round(perimeter * 10) / 10)} m</span>
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
-// Lot shape from the technical description of a land title.
-// Each side of the lot is stored as a survey bearing (e.g. N 45 deg 30' E) plus a distance in meters,
-// exactly as written on the title. From this we can draw the exact shape with the length of every
-// boundary, without needing the real location.
+// Lot shape: the outline of a lot with the length of every boundary, without its real location.
+// Two stored formats exist:
+// - Drawn in the portal (current): corner points in meters plus the length shown for each side.
+// - Older entries: survey bearing + distance per side, as in the title's technical description.
+// Both are turned into the same NormalizedLotShape before drawing.
 
 export interface LotSide {
   ns: 'N' | 'S'
@@ -12,8 +13,26 @@ export interface LotSide {
   dist: number
 }
 
+// Older format: bearings + distances.
 export interface LotShape {
   sides: LotSide[]
+}
+
+// Current format, drawn in the portal. Points in meters (x = right/east, y = up/north),
+// lengths[i] belongs to the side from point i to point i + 1 (the last one closes back to point 1).
+export interface DrawnLotShape {
+  points: [number, number][]
+  lengths: number[]
+  // True when the top of the drawing is north (then a north arrow is shown).
+  north: boolean
+}
+
+export type StoredLotShape = LotShape | DrawnLotShape
+
+export interface NormalizedLotShape {
+  points: { x: number; y: number }[]
+  lengths: number[]
+  north: boolean
 }
 
 export interface LotGeometry {
@@ -116,34 +135,58 @@ export function computeGeometry(sides: LotSide[]): LotGeometry | null {
   }
 }
 
-export function isLotShape(value: unknown): value is LotShape {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    Array.isArray((value as LotShape).sides) &&
-    (value as LotShape).sides.length >= 3
-  )
+export function formatMeters(value: number): string {
+  return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`
+}
+
+export function polygonArea(points: { x: number; y: number }[]): number {
+  let twice = 0
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i]
+    const q = points[(i + 1) % points.length]
+    twice += p.x * q.y - q.x * p.y
+  }
+  return Math.abs(twice) / 2
+}
+
+// Accepts whatever is stored in properties.lot_shape and returns one common form, or null.
+export function normalizeShape(value: unknown): NormalizedLotShape | null {
+  if (typeof value !== 'object' || value === null) return null
+  const v = value as Partial<DrawnLotShape> & Partial<LotShape>
+  if (Array.isArray(v.points) && v.points.length >= 3) {
+    const points = v.points
+      .filter((p) => Array.isArray(p) && p.length === 2 && p.every((n) => Number.isFinite(Number(n))))
+      .map((p) => ({ x: Number(p[0]), y: Number(p[1]) }))
+    if (points.length < 3) return null
+    const lengths = points.map((p, i) => {
+      const given = Array.isArray(v.lengths) ? Number(v.lengths[i]) : NaN
+      if (given > 0) return given
+      const q = points[(i + 1) % points.length]
+      return Math.hypot(q.x - p.x, q.y - p.y)
+    })
+    return { points, lengths, north: Boolean(v.north) }
+  }
+  if (Array.isArray(v.sides) && v.sides.length >= 3) {
+    const geo = computeGeometry(v.sides)
+    if (!geo) return null
+    return { points: geo.points, lengths: v.sides.map((s) => s.dist), north: true }
+  }
+  return null
 }
 
 export interface LotDrawing {
   width: number
   height: number
-  polygon: string
+  points: { x: number; y: number }[]
   sideLabels: { x: number; y: number; angle: number; text: string }[]
   cornerLabels: { x: number; y: number; text: string }[]
-  north: { x: number; y: number }
-}
-
-export function formatMeters(value: number): string {
-  return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`
+  north: { x: number; y: number } | null
 }
 
 // Fits the lot into a drawing area and works out where each length and corner number goes:
-// lengths sit just outside their side, turned along it and always readable from below.
-export function layoutDrawing(sides: LotSide[], maxW = 360, maxH = 260, pad = 50): LotDrawing | null {
-  const geo = computeGeometry(sides)
-  if (!geo) return null
-  const raw = geo.points.map((p) => ({ x: p.x, y: -p.y }))
+// lengths sit just outside their side, turned along it and always readable.
+export function layoutDrawing(shape: NormalizedLotShape, maxW = 360, maxH = 260, pad = 50): LotDrawing {
+  const raw = shape.points.map((p) => ({ x: p.x, y: -p.y }))
   const minX = Math.min(...raw.map((p) => p.x))
   const maxX = Math.max(...raw.map((p) => p.x))
   const minY = Math.min(...raw.map((p) => p.y))
@@ -152,7 +195,21 @@ export function layoutDrawing(sides: LotSide[], maxW = 360, maxH = 260, pad = 50
   const h = Math.max(maxY - minY, 1e-6)
   const scale = Math.min(maxW / w, maxH / h)
   const pts = raw.map((p) => ({ x: pad + (p.x - minX) * scale, y: pad + (p.y - minY) * scale }))
+  const labels = labelPositions(pts)
+  const width = w * scale + pad * 2
+  const height = h * scale + pad * 2
+  return {
+    width,
+    height,
+    points: pts,
+    sideLabels: labels.sides.map((l, i) => ({ ...l, text: formatMeters(shape.lengths[i]) })),
+    cornerLabels: labels.corners,
+    north: shape.north ? { x: width - 22, y: 14 } : null,
+  }
+}
 
+// Label spots for a polygon in screen coordinates (y down): one per side, one per corner.
+export function labelPositions(pts: { x: number; y: number }[], offset = 14) {
   let twice = 0
   for (let i = 0; i < pts.length; i++) {
     const a = pts[i]
@@ -162,40 +219,25 @@ export function layoutDrawing(sides: LotSide[], maxW = 360, maxH = 260, pad = 50
   const orient = twice >= 0 ? 1 : -1
   const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length
   const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length
-
-  const sideLabels = pts.map((a, i) => {
+  const sides = pts.map((a, i) => {
     const b = pts[(i + 1) % pts.length]
     const dx = b.x - a.x
     const dy = b.y - a.y
     const len = Math.hypot(dx, dy) || 1
-    const nx = (orient * dy) / len
-    const ny = (orient * -dx) / len
     let angle = (Math.atan2(dy, dx) * 180) / Math.PI
     if (angle > 89) angle -= 180
     if (angle < -90) angle += 180
     return {
-      x: (a.x + b.x) / 2 + nx * 14,
-      y: (a.y + b.y) / 2 + ny * 14,
+      x: (a.x + b.x) / 2 + ((orient * dy) / len) * offset,
+      y: (a.y + b.y) / 2 + ((orient * -dx) / len) * offset,
       angle,
-      text: formatMeters(sides[i].dist),
     }
   })
-
-  const cornerLabels = pts.map((p, i) => {
+  const corners = pts.map((p, i) => {
     const vx = p.x - cx
     const vy = p.y - cy
     const vl = Math.hypot(vx, vy) || 1
-    return { x: p.x + (vx / vl) * 15, y: p.y + (vy / vl) * 15, text: String(i + 1) }
+    return { x: p.x + (vx / vl) * (offset + 1), y: p.y + (vy / vl) * (offset + 1), text: String(i + 1) }
   })
-
-  const width = w * scale + pad * 2
-  const height = h * scale + pad * 2
-  return {
-    width,
-    height,
-    polygon: pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
-    sideLabels,
-    cornerLabels,
-    north: { x: width - 22, y: 14 },
-  }
+  return { sides, corners }
 }

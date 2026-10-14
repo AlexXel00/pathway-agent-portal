@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import type { Agent, AgentActivity, Property } from '../lib/types'
 import { formatPhp, formatNumber, getAgentInitials } from '../lib/format'
 import { ADVERTISED_CHANNELS } from '../lib/constants'
-import { isLotShape } from '../lib/lotShape'
+import { normalizeShape } from '../lib/lotShape'
 import LotShapeDrawing from './LotShapeDrawing'
 import PropertyDocuments from './PropertyDocuments'
 
@@ -93,6 +93,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
   const listingAgent = property.listing_agent_id ? agentsById[property.listing_agent_id] : null
   const listingAgentName = listingAgent?.name ?? property.listing_agent_other_name
   const closingAgent = property.closing_agent_id ? agentsById[property.closing_agent_id] : null
+  const lotShape = normalizeShape(property.lot_shape)
 
   return (
     <div
@@ -272,7 +273,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
             )}
           </div>
 
-          {isLotShape(property.lot_shape) && (
+          {lotShape && (
             <div style={{ margin: '18px 0' }}>
               <h3 style={{ fontSize: '1rem' }}>
                 Lot shape
@@ -282,7 +283,7 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
                   </span>
                 )}
               </h3>
-              <LotShapeDrawing sides={property.lot_shape.sides} lotSizeSqm={property.lot_size_sqm} />
+              <LotShapeDrawing shape={lotShape} lotSizeSqm={property.lot_size_sqm} />
             </div>
           )}
 

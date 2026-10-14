@@ -1,4 +1,4 @@
-import type { LotShape } from './lotShape'
+import type { StoredLotShape } from './lotShape'
 
 export type PropertyType =
   | 'Commercial'
@@ -119,8 +119,8 @@ export interface Property {
   // Optional coordinates for the embedded map view on the listing detail page.
   latitude: number | null
   longitude: number | null
-  // Exact lot shape from the title's technical description (bearing + distance per side).
-  lot_shape?: LotShape | null
+  // Lot shape drawn in the portal (corner points + lengths), or older bearing + distance entries.
+  lot_shape?: StoredLotShape | null
   // When false the shape is only shown here in the portal, not on the public website.
   lot_shape_public?: boolean
   raw_media_url: string | null

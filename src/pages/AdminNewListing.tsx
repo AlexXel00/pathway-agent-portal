@@ -5,8 +5,7 @@ import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '
 import { COMMON_TAGS, PALAWAN_MUNICIPALITIES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { pickImagesFromGoogleDrive } from '../lib/googleDrivePicker'
-import LotShapeEditor, { rowsFromShape, shapeFromRows, type LotSideRow } from '../components/LotShapeEditor'
-import { isLotShape } from '../lib/lotShape'
+import LotShapeEditor, { type LotShapeResult } from '../components/LotShapeEditor'
 import PropertyDocuments from '../components/PropertyDocuments'
 
 const TYPES: PropertyType[] = [
@@ -107,7 +106,9 @@ export default function AdminNewListing() {
   const [buildAreaMode, setBuildAreaMode] = useState<'sqm' | 'text'>('sqm')
   const [buildAreaText, setBuildAreaText] = useState('')
   const [lotSize, setLotSize] = useState('')
-  const [lotSideRows, setLotSideRows] = useState<LotSideRow[]>([])
+  // What is stored in lot_shape when the form opens, and what the shape editor currently holds.
+  const [initialLotShape, setInitialLotShape] = useState<unknown>(null)
+  const [lotShapeResult, setLotShapeResult] = useState<LotShapeResult>({ shape: null, error: null })
   const [lotShapePublic, setLotShapePublic] = useState(true)
   const [sellingPoint, setSellingPoint] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -191,7 +192,7 @@ export default function AdminNewListing() {
       setBuildAreaText(data.build_area_text ?? '')
       setBuildAreaMode(data.build_area_text ? 'text' : 'sqm')
       setLotSize(data.lot_size_sqm != null ? String(data.lot_size_sqm) : '')
-      setLotSideRows(isLotShape(data.lot_shape) ? rowsFromShape(data.lot_shape) : [])
+      setInitialLotShape(data.lot_shape ?? null)
       setLotShapePublic(data.lot_shape_public ?? true)
       setSellingPoint(data.special_selling_point ?? '')
       setTags(data.tags ?? [])
@@ -415,8 +416,7 @@ export default function AdminNewListing() {
     e.preventDefault()
     setError(null)
 
-    const lotShapeResult = listingKind === 'property' ? shapeFromRows(lotSideRows) : { shape: null, error: null }
-    if (lotShapeResult.error) {
+    if (listingKind === 'property' && lotShapeResult.error) {
       setError(lotShapeResult.error)
       return
     }
@@ -440,7 +440,7 @@ export default function AdminNewListing() {
       build_area_text:
         listingKind === 'property' && hasStructure && buildAreaMode === 'text' && buildAreaText ? buildAreaText : null,
       lot_size_sqm: listingKind === 'property' && lotSize ? Number(lotSize) : null,
-      lot_shape: lotShapeResult.shape,
+      lot_shape: listingKind === 'property' ? lotShapeResult.shape : null,
       lot_shape_public: lotShapePublic,
       listing_kind: listingKind,
       condo_floor_area_sqm: listingKind === 'condo' && condoFloorArea ? Number(condoFloorArea) : null,
@@ -830,8 +830,8 @@ export default function AdminNewListing() {
         </div>
 
         <LotShapeEditor
-          rows={lotSideRows}
-          onRowsChange={setLotSideRows}
+          initial={initialLotShape}
+          onChange={setLotShapeResult}
           isPublic={lotShapePublic}
           onPublicChange={setLotShapePublic}
           lotSizeSqm={lotSize ? Number(lotSize) : null}
