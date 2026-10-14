@@ -135,6 +135,18 @@ export interface Property {
   updated_at: string
 }
 
+// Title scans and other legal documents of a listing. Admins only (row level security).
+export interface PropertyDocument {
+  id: string
+  property_id: string
+  doc_type: string
+  file_path: string
+  file_name: string
+  notes: string | null
+  uploaded_by: string | null
+  created_at: string
+}
+
 export interface AgentActivity {
   id: string
   property_id: string

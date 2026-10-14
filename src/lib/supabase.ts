@@ -39,3 +39,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 export const MEDIA_BUCKET = 'property-media'
+
+// Private bucket for title scans and other legal documents. Not public: files are only
+// readable by admins (enforced in the database) and are opened through short-lived links.
+export const DOCUMENTS_BUCKET = 'property-documents'

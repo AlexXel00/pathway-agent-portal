@@ -7,6 +7,7 @@ import { formatPhp, formatNumber, getAgentInitials } from '../lib/format'
 import { ADVERTISED_CHANNELS } from '../lib/constants'
 import { isLotShape } from '../lib/lotShape'
 import LotShapeDrawing from './LotShapeDrawing'
+import PropertyDocuments from './PropertyDocuments'
 
 interface Props {
   property: Property
@@ -294,6 +295,14 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
               style={{ border: 0, borderRadius: 12, marginBottom: 14 }}
               loading="lazy"
             />
+          )}
+
+          {agent?.is_admin && (
+            <>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />
+              <h3 style={{ fontSize: '1rem' }}>Documents (admins only)</h3>
+              <PropertyDocuments propertyId={property.id} agentsById={agentsById} />
+            </>
           )}
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />

@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { pickImagesFromGoogleDrive } from '../lib/googleDrivePicker'
 import LotShapeEditor, { rowsFromShape, shapeFromRows, type LotSideRow } from '../components/LotShapeEditor'
 import { isLotShape } from '../lib/lotShape'
+import PropertyDocuments from '../components/PropertyDocuments'
 
 const TYPES: PropertyType[] = [
   'Residential',
@@ -1183,6 +1184,24 @@ export default function AdminNewListing() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="field" style={{ borderLeft: '2px solid var(--color-beige)', paddingLeft: 14 }}>
+          <label>Documents (admins only)</label>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+            Scans of the title, tax declaration, survey plan and other papers. Stored privately: only admins can see
+            or open them, never agents and never the website.
+          </p>
+          {isEdit && id ? (
+            <PropertyDocuments
+              propertyId={id}
+              agentsById={Object.fromEntries(agents.map((a) => [a.id, a]))}
+            />
+          ) : (
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
+              Publish the listing first, then open it with "Edit listing" to add documents.
+            </p>
           )}
         </div>
 
