@@ -835,6 +835,7 @@ export default function AdminNewListing() {
           isPublic={lotShapePublic}
           onPublicChange={setLotShapePublic}
           lotSizeSqm={lotSize ? Number(lotSize) : null}
+          propertyId={isEdit ? id : undefined}
         />
 
         <div className="form-grid-2">

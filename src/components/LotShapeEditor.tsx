@@ -9,6 +9,9 @@ import {
   type DrawnLotShape,
 } from '../lib/lotShape'
 import { formatNumber } from '../lib/format'
+import { readLotShapeFromFile } from '../lib/readLotShape'
+import { supabase, DOCUMENTS_BUCKET } from '../lib/supabase'
+import type { PropertyDocument } from '../lib/types'
 
 // Drawing area in screen units. Points are kept in these units while drawing and converted to
 // meters (using the lengths that were typed in) when the listing is saved.
@@ -60,9 +63,11 @@ interface Props {
   isPublic: boolean
   onPublicChange: (value: boolean) => void
   lotSizeSqm: number | null
+  // When editing an existing listing: lets the shape be read from one of its uploaded documents.
+  propertyId?: string
 }
 
-export default function LotShapeEditor({ initial, onChange, isPublic, onPublicChange, lotSizeSqm }: Props) {
+export default function LotShapeEditor({ initial, onChange, isPublic, onPublicChange, lotSizeSqm, propertyId }: Props) {
   const start = normalizeShape(initial)
   const [pts, setPts] = useState<Pt[]>(() => (start ? fitToCanvas(start.points) : []))
   const [closed, setClosed] = useState(Boolean(start))
@@ -76,6 +81,22 @@ export default function LotShapeEditor({ initial, onChange, isPublic, onPublicCh
   const [showPaste, setShowPaste] = useState(false)
   const [pasted, setPasted] = useState('')
   const [pasteMessage, setPasteMessage] = useState<string | null>(null)
+  const [scanBusy, setScanBusy] = useState(false)
+  const [scanMessage, setScanMessage] = useState<string | null>(null)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [documents, setDocuments] = useState<PropertyDocument[]>([])
+  const [selectedDoc, setSelectedDoc] = useState('')
+
+  // Uploaded title scans etc. of this listing, so the shape can be read from one of them.
+  useEffect(() => {
+    if (!propertyId) return
+    supabase
+      .from('property_documents')
+      .select('*')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setDocuments(data ?? []))
+  }, [propertyId])
 
   const svgRef = useRef<SVGSVGElement>(null)
   const dragIndex = useRef<number | null>(null)
@@ -190,6 +211,66 @@ export default function LotShapeEditor({ initial, onChange, isPublic, onPublicCh
     setNorth(false)
   }
 
+  async function readFromScan(file: Blob, fileName: string) {
+    setScanBusy(true)
+    setScanError(null)
+    setScanMessage(null)
+    try {
+      const result = await readLotShapeFromFile(file, fileName)
+      const geo = result.found ? computeGeometry(result.sides) : null
+      if (!geo) {
+        setScanError(
+          `No complete boundary found in this document.${result.notes ? ` ${result.notes}` : ''} You can draw the shape by hand instead.`,
+        )
+        return
+      }
+      setPts(fitToCanvas(geo.points))
+      setClosed(true)
+      setLengthInputs(result.sides.map((side) => String(side.dist)))
+      setNorth(true)
+      const parts = [`${result.sides.length} sides read${result.lot_label ? ` (${result.lot_label})` : ''}.`]
+      if (result.lot_area_sqm) {
+        parts.push(
+          `Area on the document: ${formatNumber(result.lot_area_sqm)} sqm, from the shape: approx. ${formatNumber(Math.round(geo.areaSqm))} sqm.`,
+        )
+      }
+      if (geo.closureErrorM > 0.5) {
+        parts.push(
+          `The boundary does not fully close (${formatNumber(Math.round(geo.closureErrorM * 100) / 100)} m gap), so one value may be misread. Please check the lengths against the document.`,
+        )
+      } else {
+        parts.push('Please compare the lengths with the document once.')
+      }
+      if (result.notes) parts.push(result.notes)
+      setScanMessage(parts.join(' '))
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'The document could not be read.')
+    } finally {
+      setScanBusy(false)
+    }
+  }
+
+  function handleScanFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (file) readFromScan(file, file.name)
+  }
+
+  async function readFromDocument() {
+    const doc = documents.find((d) => d.id === selectedDoc)
+    if (!doc) return
+    setScanBusy(true)
+    setScanError(null)
+    setScanMessage(null)
+    const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).download(doc.file_path)
+    if (error || !data) {
+      setScanBusy(false)
+      setScanError(`The document could not be loaded: ${error?.message ?? 'unknown error'}`)
+      return
+    }
+    await readFromScan(data, doc.file_name)
+  }
+
   function readTechnicalDescription() {
     const sides = parseTechnicalDescription(pasted)
     const geo = computeGeometry(sides)
@@ -230,6 +311,41 @@ export default function LotShapeEditor({ initial, onChange, isPublic, onPublicCh
         below and type in the lengths you know. Tip: load a photo of the lot plan as background and click along its
         corners, then the shape is exact.
       </p>
+
+      <div style={{ background: '#f7f1e8', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>Read automatically from a scan</div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', margin: '0 0 10px' }}>
+          Photo or PDF of the title page with the technical description, or of the lot plan. The shape is drawn
+          from it in a few seconds.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <label
+            className="btn btn-primary"
+            style={{ cursor: scanBusy ? 'wait' : 'pointer', margin: 0, opacity: scanBusy ? 0.6 : 1, color: 'var(--color-ivory)', textTransform: 'none', letterSpacing: 0, fontSize: '0.9rem', fontWeight: 600 }}
+          >
+            {scanBusy ? 'Reading...' : 'Read from scan'}
+            <input type="file" accept="image/*,application/pdf" onChange={handleScanFile} disabled={scanBusy} style={{ display: 'none' }} />
+          </label>
+          {documents.length > 0 && (
+            <>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-secondary)' }}>or from an uploaded document:</span>
+              <select value={selectedDoc} onChange={(e) => setSelectedDoc(e.target.value)} style={{ width: 'auto', maxWidth: 260 }} disabled={scanBusy}>
+                <option value="">- Select -</option>
+                {documents.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.doc_type}: {d.file_name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" className="btn btn-outline" onClick={readFromDocument} disabled={!selectedDoc || scanBusy}>
+                Read
+              </button>
+            </>
+          )}
+        </div>
+        {scanMessage && <p style={{ fontSize: '0.82rem', color: 'var(--color-success)', margin: '10px 0 0' }}>{scanMessage}</p>}
+        {scanError && <p style={{ fontSize: '0.82rem', color: 'var(--color-danger)', margin: '10px 0 0' }}>{scanError}</p>}
+      </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
         <span style={{ fontSize: '0.82rem', fontWeight: 600, paddingBottom: 9 }}>Rectangular lot?</span>
