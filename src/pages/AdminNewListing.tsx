@@ -5,6 +5,9 @@ import type { Agent, Broker, ListingStatus, PropertyType, StructureType } from '
 import { COMMON_TAGS, PALAWAN_MUNICIPALITIES } from '../lib/constants'
 import { useAuth } from '../context/AuthContext'
 import { pickImagesFromGoogleDrive } from '../lib/googleDrivePicker'
+import LotShapeEditor, { rowsFromShape, shapeFromRows, type LotSideRow } from '../components/LotShapeEditor'
+import { isLotShape } from '../lib/lotShape'
+import PropertyDocuments from '../components/PropertyDocuments'
 
 const TYPES: PropertyType[] = [
   'Residential',
@@ -104,6 +107,8 @@ export default function AdminNewListing() {
   const [buildAreaMode, setBuildAreaMode] = useState<'sqm' | 'text'>('sqm')
   const [buildAreaText, setBuildAreaText] = useState('')
   const [lotSize, setLotSize] = useState('')
+  const [lotSideRows, setLotSideRows] = useState<LotSideRow[]>([])
+  const [lotShapePublic, setLotShapePublic] = useState(true)
   const [sellingPoint, setSellingPoint] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [customTag, setCustomTag] = useState('')
@@ -186,6 +191,8 @@ export default function AdminNewListing() {
       setBuildAreaText(data.build_area_text ?? '')
       setBuildAreaMode(data.build_area_text ? 'text' : 'sqm')
       setLotSize(data.lot_size_sqm != null ? String(data.lot_size_sqm) : '')
+      setLotSideRows(isLotShape(data.lot_shape) ? rowsFromShape(data.lot_shape) : [])
+      setLotShapePublic(data.lot_shape_public ?? true)
       setSellingPoint(data.special_selling_point ?? '')
       setTags(data.tags ?? [])
       setDescription(data.description ?? '')
@@ -407,6 +414,13 @@ export default function AdminNewListing() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    const lotShapeResult = listingKind === 'property' ? shapeFromRows(lotSideRows) : { shape: null, error: null }
+    if (lotShapeResult.error) {
+      setError(lotShapeResult.error)
+      return
+    }
+
     setSaving(true)
 
     const payload = {
@@ -426,6 +440,8 @@ export default function AdminNewListing() {
       build_area_text:
         listingKind === 'property' && hasStructure && buildAreaMode === 'text' && buildAreaText ? buildAreaText : null,
       lot_size_sqm: listingKind === 'property' && lotSize ? Number(lotSize) : null,
+      lot_shape: lotShapeResult.shape,
+      lot_shape_public: lotShapePublic,
       listing_kind: listingKind,
       condo_floor_area_sqm: listingKind === 'condo' && condoFloorArea ? Number(condoFloorArea) : null,
       floor_level: listingKind === 'condo' ? (floorLevel || null) : null,
@@ -813,6 +829,14 @@ export default function AdminNewListing() {
           <input id="lotSize" type="number" min="0" value={lotSize} onChange={(e) => setLotSize(e.target.value)} />
         </div>
 
+        <LotShapeEditor
+          rows={lotSideRows}
+          onRowsChange={setLotSideRows}
+          isPublic={lotShapePublic}
+          onPublicChange={setLotShapePublic}
+          lotSizeSqm={lotSize ? Number(lotSize) : null}
+        />
+
         <div className="form-grid-2">
           <div className="field">
             <label htmlFor="electricity">Electricity</label>
@@ -1160,6 +1184,24 @@ export default function AdminNewListing() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="field" style={{ borderLeft: '2px solid var(--color-beige)', paddingLeft: 14 }}>
+          <label>Documents (admins only)</label>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)', marginTop: 0 }}>
+            Scans of the title, tax declaration, survey plan and other papers. Stored privately: only admins can see
+            or open them, never agents and never the website.
+          </p>
+          {isEdit && id ? (
+            <PropertyDocuments
+              propertyId={id}
+              agentsById={Object.fromEntries(agents.map((a) => [a.id, a]))}
+            />
+          ) : (
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>
+              Publish the listing first, then open it with "Edit listing" to add documents.
+            </p>
           )}
         </div>
 

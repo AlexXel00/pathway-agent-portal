@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext'
 import type { Agent, AgentActivity, Property } from '../lib/types'
 import { formatPhp, formatNumber, getAgentInitials } from '../lib/format'
 import { ADVERTISED_CHANNELS } from '../lib/constants'
+import { isLotShape } from '../lib/lotShape'
+import LotShapeDrawing from './LotShapeDrawing'
+import PropertyDocuments from './PropertyDocuments'
 
 interface Props {
   property: Property
@@ -269,6 +272,20 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
             )}
           </div>
 
+          {isLotShape(property.lot_shape) && (
+            <div style={{ margin: '18px 0' }}>
+              <h3 style={{ fontSize: '1rem' }}>
+                Lot shape
+                {property.lot_shape_public === false && (
+                  <span className="badge badge-neutral" style={{ marginLeft: 10, fontSize: '0.7rem', verticalAlign: 'middle' }}>
+                    Portal only
+                  </span>
+                )}
+              </h3>
+              <LotShapeDrawing sides={property.lot_shape.sides} lotSizeSqm={property.lot_size_sqm} />
+            </div>
+          )}
+
           {property.latitude != null && property.longitude != null && (
             <iframe
               title="Property location"
@@ -278,6 +295,14 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
               style={{ border: 0, borderRadius: 12, marginBottom: 14 }}
               loading="lazy"
             />
+          )}
+
+          {agent?.is_admin && (
+            <>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />
+              <h3 style={{ fontSize: '1rem' }}>Documents (admins only)</h3>
+              <PropertyDocuments propertyId={property.id} agentsById={agentsById} />
+            </>
           )}
 
           <hr style={{ border: 'none', borderTop: '1px solid var(--color-beige)', margin: '22px 0' }} />

@@ -1,3 +1,5 @@
+import type { LotShape } from './lotShape'
+
 export type PropertyType =
   | 'Commercial'
   | 'Residential'
@@ -117,6 +119,10 @@ export interface Property {
   // Optional coordinates for the embedded map view on the listing detail page.
   latitude: number | null
   longitude: number | null
+  // Exact lot shape from the title's technical description (bearing + distance per side).
+  lot_shape?: LotShape | null
+  // When false the shape is only shown here in the portal, not on the public website.
+  lot_shape_public?: boolean
   raw_media_url: string | null
   edited_media_url: string | null
   listing_status: ListingStatus
@@ -127,6 +133,18 @@ export interface Property {
   sale_date: string | null
   created_at: string
   updated_at: string
+}
+
+// Title scans and other legal documents of a listing. Admins only (row level security).
+export interface PropertyDocument {
+  id: string
+  property_id: string
+  doc_type: string
+  file_path: string
+  file_name: string
+  notes: string | null
+  uploaded_by: string | null
+  created_at: string
 }
 
 export interface AgentActivity {
