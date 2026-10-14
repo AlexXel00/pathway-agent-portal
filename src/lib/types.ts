@@ -1,3 +1,5 @@
+import type { LotShape } from './lotShape'
+
 export type PropertyType =
   | 'Commercial'
   | 'Residential'
@@ -117,6 +119,10 @@ export interface Property {
   // Optional coordinates for the embedded map view on the listing detail page.
   latitude: number | null
   longitude: number | null
+  // Exact lot shape from the title's technical description (bearing + distance per side).
+  lot_shape?: LotShape | null
+  // When false the shape is only shown here in the portal, not on the public website.
+  lot_shape_public?: boolean
   raw_media_url: string | null
   edited_media_url: string | null
   listing_status: ListingStatus

@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext'
 import type { Agent, AgentActivity, Property } from '../lib/types'
 import { formatPhp, formatNumber, getAgentInitials } from '../lib/format'
 import { ADVERTISED_CHANNELS } from '../lib/constants'
+import { isLotShape } from '../lib/lotShape'
+import LotShapeDrawing from './LotShapeDrawing'
 
 interface Props {
   property: Property
@@ -268,6 +270,20 @@ export default function PropertyDetailModal({ property, agentsById, onClose }: P
               </a>
             )}
           </div>
+
+          {isLotShape(property.lot_shape) && (
+            <div style={{ margin: '18px 0' }}>
+              <h3 style={{ fontSize: '1rem' }}>
+                Lot shape
+                {property.lot_shape_public === false && (
+                  <span className="badge badge-neutral" style={{ marginLeft: 10, fontSize: '0.7rem', verticalAlign: 'middle' }}>
+                    Portal only
+                  </span>
+                )}
+              </h3>
+              <LotShapeDrawing sides={property.lot_shape.sides} lotSizeSqm={property.lot_size_sqm} />
+            </div>
+          )}
 
           {property.latitude != null && property.longitude != null && (
             <iframe
