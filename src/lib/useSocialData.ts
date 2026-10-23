@@ -161,3 +161,54 @@ export function listingName(
   if (post.condo_project_id) return lookups.condosById[post.condo_project_id]?.name ?? 'Unknown condo'
   return null
 }
+
+// ---- quick entries typed straight into a day ----
+
+const PLATFORM_WORDS: Record<'facebook' | 'instagram' | 'tiktok', RegExp> = {
+  facebook: /\b(fb|facebook)\b/i,
+  instagram: /\b(ig|insta|instagram)\b/i,
+  tiktok: /\b(tt|tiktok|tik tok)\b/i,
+}
+
+function findListing(text: string, options: ListingOption[]): ListingOption | null {
+  const lower = text.toLowerCase()
+  let best: ListingOption | null = null
+  for (const o of options) {
+    const name = o.name.trim().toLowerCase()
+    if (name.length >= 3 && lower.includes(name) && (!best || name.length > best.name.length)) best = o
+  }
+  return best
+}
+
+// Turns a line like "Post for Hilltop Land insta and fb" into a post: platforms and the
+// promoted listing are picked up from the words, everything else can be added later.
+export function quickEntryPayload(text: string, date: string, lookups: SocialLookups) {
+  const title = text.trim()
+  const property = findListing(title, lookups.properties.filter((p) => p.listing_status !== 'Sold'))
+  const condo = property ? null : findListing(title, lookups.condos)
+  const needs = property ? 'property' : condo ? 'condo' : null
+  const category = needs ? lookups.categories.find((c) => c.is_active && c.requires_object === needs) : undefined
+  const video = /\b(video|reel|reels)\b/i.test(title)
+  const photo = /\b(photo|photos|picture|pic|carousel)\b/i.test(title)
+  return {
+    post_date: date,
+    title,
+    on_facebook: PLATFORM_WORDS.facebook.test(title),
+    on_instagram: PLATFORM_WORDS.instagram.test(title),
+    on_tiktok: PLATFORM_WORDS.tiktok.test(title),
+    property_id: category && property ? property.id : null,
+    condo_project_id: category && condo ? condo.id : null,
+    category_id: category?.id ?? null,
+    media_type: video && photo ? 'both' : video ? 'video' : 'photo',
+    status: 'idea',
+  }
+}
+
+// Ticking a post off marks it as posted on every platform it was planned for; un-ticking
+// clears those ticks again so the database does not flip it straight back to posted.
+export async function setPostDone(post: ContentPost, done: boolean) {
+  const patch = done
+    ? { status: 'posted' }
+    : { status: 'ready', posted_facebook: false, posted_instagram: false, posted_tiktok: false }
+  return supabase.from('content_posts').update(patch).eq('id', post.id)
+}

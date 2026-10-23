@@ -8,6 +8,11 @@ interface Props {
   onOpen: (post: ContentPost) => void
 }
 
+interface CardProps extends Props {
+  canEdit: boolean
+  onToggleDone: (post: ContentPost, done: boolean) => void
+}
+
 function categoryColor(post: ContentPost, lookups: SocialLookups): string {
   return (post.category_id && lookups.categoriesById[post.category_id]?.color) || 'var(--color-accent)'
 }
@@ -39,7 +44,7 @@ export function PostChip({ post, lookups, onOpen }: Props) {
   return (
     <button
       type="button"
-      className="sc-chip"
+      className={`sc-chip${post.status === 'posted' ? ' done' : ''}`}
       style={{ ['--sc-cat' as string]: categoryColor(post, lookups) }}
       title={`${post.title} (${status.label})`}
       onClick={(e) => {
@@ -55,25 +60,42 @@ export function PostChip({ post, lookups, onOpen }: Props) {
 }
 
 // Larger card for the two-week working view, with preview image and details.
-export function PostCard({ post, lookups, onOpen }: Props) {
+export function PostCard({ post, lookups, onOpen, canEdit, onToggleDone }: CardProps) {
   const status = statusMeta(post.status)
   const thumb = thumbnailUrl(post.thumbnail_path)
   const category = post.category_id ? lookups.categoriesById[post.category_id] : null
   const listing = listingName(post, lookups)
   const assigned = post.assigned_to ? lookups.agentsById[post.assigned_to] : null
   const mediaCount = post.content_media?.length ?? 0
+  const done = post.status === 'posted'
 
   return (
-    <button
-      type="button"
-      className="sc-card"
+    <div
+      role="button"
+      tabIndex={0}
+      className={`sc-card${done ? ' done' : ''}`}
       style={{ ['--sc-cat' as string]: categoryColor(post, lookups) }}
       onClick={() => onOpen(post)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(post)
+      }}
     >
       {thumb && <img className="sc-card-thumb" src={thumb} alt="" loading="lazy" />}
-      <span className="sc-card-title">
-        {post.post_time && <span style={{ color: 'var(--color-secondary)' }}>{formatTime(post.post_time)} </span>}
-        {post.title}
+      <span className="sc-card-titlerow">
+        <input
+          type="checkbox"
+          className="sc-done-box"
+          checked={done}
+          disabled={!canEdit}
+          title={done ? 'Done. Click to undo' : 'Mark as done'}
+          aria-label={done ? 'Mark as not done' : 'Mark as done'}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onToggleDone(post, e.target.checked)}
+        />
+        <span className="sc-card-title">
+          {post.post_time && <span style={{ color: 'var(--color-secondary)' }}>{formatTime(post.post_time)} </span>}
+          {post.title}
+        </span>
       </span>
       {(category || listing) && (
         <span style={{ fontSize: '0.68rem', color: 'var(--color-secondary)', lineHeight: 1.35 }}>
@@ -96,6 +118,6 @@ export function PostCard({ post, lookups, onOpen }: Props) {
         </span>
         {assigned && <span>{assigned.name.split(' ')[0]}</span>}
       </span>
-    </button>
+    </div>
   )
 }

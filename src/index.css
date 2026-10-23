@@ -635,6 +635,61 @@ button {
   color: var(--color-ivory);
 }
 
+/* quick entry typed straight into a day, and the done tick on each card */
+.sc-quick {
+  width: 100%;
+  min-width: 0;
+  margin-top: auto;
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--color-accent);
+  background: transparent;
+  color: var(--color-charcoal);
+  font-size: 0.76rem;
+  outline: none;
+}
+
+.sc-quick:focus {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: #fff;
+}
+
+.sc-quick::placeholder {
+  color: var(--color-secondary);
+}
+
+.sc-card-titlerow {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.sc-done-box {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--color-success);
+  cursor: pointer;
+}
+
+.sc-card.done,
+.sc-chip.done {
+  background: rgba(79, 122, 92, 0.14);
+  border-left-color: var(--color-success);
+}
+
+.sc-card.done .sc-card-title,
+.sc-chip.done .sc-chip-title {
+  text-decoration: line-through;
+  color: var(--color-success);
+}
+
+.sc-card {
+  cursor: pointer;
+}
+
 /* checkbox rows inside .field blocks (beats the uppercase .field label style) */
 .field label.sc-check,
 label.sc-check {

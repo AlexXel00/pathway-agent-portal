@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { ContentPost } from '../lib/types'
 import {
   BLOCK_LENGTH_DAYS,
@@ -14,17 +14,71 @@ import {
   parseISODate,
   todayISO,
 } from '../lib/contentCalendar'
-import { useContentRange, useSocialAccess, useSocialLookups } from '../lib/useSocialData'
+import { supabase } from '../lib/supabase'
+import {
+  quickEntryPayload,
+  setPostDone,
+  useContentRange,
+  useSocialAccess,
+  useSocialLookups,
+  type SocialLookups,
+} from '../lib/useSocialData'
 import { PostCard } from '../components/social/PostChip'
 import PostEditorModal from '../components/social/PostEditorModal'
 import BlockPlanCard from '../components/social/BlockPlanCard'
+import MoveBlockModal from '../components/social/MoveBlockModal'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
+// Type a line and press Enter: the post is created right away on that day.
+function QuickAdd({ date, lookups, onAdded }: { date: string; lookups: SocialLookups; onAdded: () => void }) {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    if (!text.trim() || busy) return
+    setBusy(true)
+    setError(null)
+    const { error: insertError } = await supabase.from('content_posts').insert(quickEntryPayload(text, date, lookups))
+    setBusy(false)
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+    setText('')
+    onAdded()
+  }
+
+  return (
+    <div className="no-print" style={{ marginTop: 'auto' }}>
+      <input
+        className="sc-quick"
+        type="text"
+        value={text}
+        disabled={busy}
+        placeholder="Write a post, press Enter"
+        aria-label="Quick post for this day"
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            submit()
+          }
+          if (e.key === 'Escape') setText('')
+        }}
+      />
+      {error && <p style={{ color: 'var(--color-danger)', fontSize: '0.7rem', margin: '4px 0 0' }}>{error}</p>}
+    </div>
+  )
+}
+
 export default function SocialBlock() {
   const { start: startParam } = useParams()
-  const { lookups, error: lookupError } = useSocialLookups()
+  const navigate = useNavigate()
+  const { lookups, error: lookupError, reload: reloadLookups } = useSocialLookups()
   const { canEdit } = useSocialAccess()
+  const [moving, setMoving] = useState(false)
   // null = closed, { post: null } = a new post on `date`
   const [editor, setEditor] = useState<{ post: ContentPost | null; date: string } | null>(null)
 
@@ -59,6 +113,18 @@ export default function SocialBlock() {
     reload()
   }
 
+  async function toggleDone(post: ContentPost, done: boolean) {
+    await setPostDone(post, done)
+    reload()
+  }
+
+  async function afterMove(newStart: string) {
+    setMoving(false)
+    // The rhythm changed, so load it again before opening the block at its new place.
+    await reloadLookups()
+    navigate(`/social/block/${newStart}`)
+  }
+
   return (
     <div>
       <div className="sc-toolbar no-print" style={{ justifyContent: 'space-between' }}>
@@ -71,6 +137,11 @@ export default function SocialBlock() {
           </Link>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {canEdit && (
+            <button type="button" className="btn btn-outline" onClick={() => setMoving(true)}>
+              Move block
+            </button>
+          )}
           <Link to={`/social/block/${start}/shotlist`} className="btn btn-outline">
             Shotlist
           </Link>
@@ -128,17 +199,34 @@ export default function SocialBlock() {
                 )}
               </div>
               {dayPosts.map((p) => (
-                <PostCard key={p.id} post={p} lookups={lookups} onOpen={(post) => setEditor({ post, date: post.post_date })} />
+                <PostCard
+                  key={p.id}
+                  post={p}
+                  lookups={lookups}
+                  canEdit={canEdit}
+                  onToggleDone={toggleDone}
+                  onOpen={(post) => setEditor({ post, date: post.post_date })}
+                />
               ))}
               {canEdit && (
-                <button type="button" className="sc-add no-print" onClick={() => setEditor({ post: null, date: day })}>
-                  + Add post
-                </button>
+                <>
+                  <QuickAdd date={day} lookups={lookups} onAdded={reload} />
+                  <button
+                    type="button"
+                    className="btn btn-ghost no-print"
+                    style={{ fontSize: '0.72rem', padding: '2px 6px', alignSelf: 'flex-start' }}
+                    onClick={() => setEditor({ post: null, date: day })}
+                  >
+                    + With details
+                  </button>
+                </>
               )}
             </div>
           )
         })}
       </div>
+
+      {moving && <MoveBlockModal blockStart={start!} onClose={() => setMoving(false)} onMoved={afterMove} />}
 
       {editor && (
         <PostEditorModal
