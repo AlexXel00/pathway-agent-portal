@@ -115,6 +115,11 @@ export default function Layout() {
                 Company Info
               </NavLink>
               <ChatNavLink />
+              {agent?.social_role && (
+                <NavLink to="/social" style={navLinkStyle}>
+                  Social Media
+                </NavLink>
+              )}
               {(agent?.is_admin || agent?.role === 'Marketing') && (
                 <NavLink to="/marketing-material" style={navLinkStyle}>
                   Marketing Material

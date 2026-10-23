@@ -19,6 +19,8 @@ export type Broker = 'Jason' | 'Catherine' | 'Other'
 // Marketing Material and Request pages; 'Broker' is just a label for now.
 export type AgentRole = 'Agent' | 'Marketing' | 'Broker'
 
+export type SocialRole = 'editor' | 'viewer'
+
 export interface Agent {
   id: string
   user_id: string | null
@@ -31,6 +33,8 @@ export interface Agent {
   is_head_admin: boolean
   can_view_markup: boolean
   role: AgentRole
+  // Social media calendar access: editor = plan and edit, viewer = read only, null = no access.
+  social_role: SocialRole | null
   notes: string | null
   created_at: string
 }
@@ -244,4 +248,80 @@ export interface CondoDevelopment {
   description_de?: string | null
   amenities: string[]
   photos: string[]
+}
+
+// ---- Social media content calendar ----
+
+export type ContentStatus = 'idea' | 'in_progress' | 'ready' | 'posted'
+export type ContentMediaType = 'photo' | 'video' | 'both'
+export type ContentMediaKind = 'photo' | 'video'
+export type ContentMediaSource = 'Canva' | 'CapCut' | 'Google Drive' | 'Other'
+
+export interface ContentCategory {
+  id: string
+  name: string
+  color: string
+  // property = a post in this category must link a property, condo = a condo project, null = optional.
+  requires_object: 'property' | 'condo' | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+}
+
+// One fixed two-week planning block, always starting on a Monday. A row only exists once
+// someone has written a plan for that block - empty blocks are simply missing.
+export interface ContentBlock {
+  id: string
+  start_date: string
+  focus: string | null
+  notes: string | null
+  production_day_1: string | null
+  production_day_2: string | null
+  target_facebook: number
+  target_instagram: number
+  target_tiktok: number
+  property_ids: string[]
+  condo_project_ids: string[]
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ContentMedia {
+  id: string
+  post_id: string
+  url: string
+  kind: ContentMediaKind
+  source: ContentMediaSource
+  label: string | null
+  sort_order: number
+  created_at: string
+}
+
+export interface ContentPost {
+  id: string
+  post_date: string
+  post_time: string | null
+  title: string
+  caption: string | null
+  category_id: string | null
+  property_id: string | null
+  condo_project_id: string | null
+  media_type: ContentMediaType
+  on_facebook: boolean
+  on_instagram: boolean
+  on_tiktok: boolean
+  posted_facebook: boolean
+  posted_instagram: boolean
+  posted_tiktok: boolean
+  status: ContentStatus
+  assigned_to: string | null
+  needed_photos: number
+  needed_videos: number
+  shot_notes: string | null
+  thumbnail_path: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  content_media?: ContentMedia[]
 }

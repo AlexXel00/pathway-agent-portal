@@ -15,6 +15,10 @@ import AdminCondoType from './pages/AdminCondoType'
 import AdminAgents from './pages/AdminAgents'
 import MarketingMaterial from './pages/MarketingMaterial'
 import Chat from './pages/Chat'
+import SocialCalendar from './pages/SocialCalendar'
+import SocialBlock from './pages/SocialBlock'
+import SocialShotlist from './pages/SocialShotlist'
+import SocialSettings from './pages/SocialSettings'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -35,6 +39,21 @@ function MarketingOnly({ children }: { children: React.ReactNode }) {
   const { agent, loading } = useAuth()
   if (loading) return <FullScreenMessage text="Loading..." />
   if (!agent?.is_admin && agent?.role !== 'Marketing') return <Navigate to="/listings" replace />
+  return <>{children}</>
+}
+
+// The social media calendar is only for the social media team (editors) and its viewers.
+function SocialOnly({ children }: { children: React.ReactNode }) {
+  const { agent, loading } = useAuth()
+  if (loading) return <FullScreenMessage text="Loading..." />
+  if (agent?.social_role !== 'editor' && agent?.social_role !== 'viewer') return <Navigate to="/listings" replace />
+  return <>{children}</>
+}
+
+function SocialHeadAdminOnly({ children }: { children: React.ReactNode }) {
+  const { agent, loading } = useAuth()
+  if (loading) return <FullScreenMessage text="Loading..." />
+  if (!agent?.is_head_admin || !agent?.social_role) return <Navigate to="/social" replace />
   return <>{children}</>
 }
 
@@ -126,6 +145,38 @@ function AppRoutes() {
             <MarketingOnly>
               <MarketingMaterial />
             </MarketingOnly>
+          }
+        />
+        <Route
+          path="/social"
+          element={
+            <SocialOnly>
+              <SocialCalendar />
+            </SocialOnly>
+          }
+        />
+        <Route
+          path="/social/block/:start"
+          element={
+            <SocialOnly>
+              <SocialBlock />
+            </SocialOnly>
+          }
+        />
+        <Route
+          path="/social/block/:start/shotlist"
+          element={
+            <SocialOnly>
+              <SocialShotlist />
+            </SocialOnly>
+          }
+        />
+        <Route
+          path="/social/settings"
+          element={
+            <SocialHeadAdminOnly>
+              <SocialSettings />
+            </SocialHeadAdminOnly>
           }
         />
       </Route>
